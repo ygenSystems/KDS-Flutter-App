@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:kitchen_display_system/pages/collection_display_page/collection_display_page_vm.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:kitchen_display_system/pages/landing_page/landing_page.dart';
-import 'package:kitchen_display_system/pages/kitchen_display_page/kitchen_display_page_vm.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.landscapeLeft,
     DeviceOrientation.landscapeRight,
   ]);
-  Get.put(KitchenDisplayPageVM());
-  Get.put(CollectionDisplayPageVM());
+
+  final box = GetStorage();
+  await box.initStorage;
   runApp(const MyApp());
 }
 

@@ -3,8 +3,8 @@ import 'package:kitchen_display_system/models/order.dart';
 
 class OrdersRepository {
   late final Dio _dio;
-  OrdersRepository() {
-    _dio = Dio(BaseOptions(baseUrl: 'http://192.168.100.14:6001/api'));
+  OrdersRepository(String serverIp) {
+    _dio = Dio(BaseOptions(baseUrl: 'http://$serverIp/api'));
   }
   Future<List<Order>> getKDSOrders() async {
     final response = await _dio.get('/KDSOrders');

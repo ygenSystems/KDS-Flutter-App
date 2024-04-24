@@ -2,7 +2,10 @@ import 'package:kitchen_display_system/models/order.dart';
 import 'package:kitchen_display_system/repositories/order_repository.dart';
 
 class CollectionDisplayPageVM {
-  final _ordersRepository = OrdersRepository();
+  late final OrdersRepository _ordersRepository;
+  CollectionDisplayPageVM(OrdersRepository ordersRepository) {
+    _ordersRepository = ordersRepository;
+  }
 
   List<Order> orders = [];
 

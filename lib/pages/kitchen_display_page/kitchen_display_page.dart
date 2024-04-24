@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:get/get.dart';
 import 'package:kitchen_display_system/models/order.dart';
 import 'package:kitchen_display_system/models/order_types.dart';
@@ -20,7 +21,7 @@ class _KitchenDisplayPageState extends State<KitchenDisplayPage> {
   int _updateCount = 5;
 
   OrderType _selection = OrderType.all;
-  List<Order> _orders = [];
+  final List<Order> _orders = [];
   List<int> _count = [0, 0, 0, 0];
 
   @override
@@ -96,30 +97,24 @@ class _KitchenDisplayPageState extends State<KitchenDisplayPage> {
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8.0),
-        child: SingleChildScrollView(
-          child: Row(
-            children: [
-              Expanded(
-                child: Wrap(
-                  children: List<Widget>.generate(
-                    _orders.length,
-                    (index) {
-                      final order = _orders[index];
-                      return TicketWidget(
-                        order: order,
-                        onDonePressed: (orderNumber) {
-                          _vm.updateOrder(orderNumber, 'done');
-                        },
-                        onPreparingPressed: (orderNumber) {
-                          _vm.updateOrder(orderNumber, 'preparing');
-                        },
-                      );
-                    },
-                  ),
-                ),
+        child: MasonryGridView.count(
+          itemCount: _orders.length,
+          crossAxisCount: 4,
+          itemBuilder: (context, index) {
+            final order = _orders[index];
+            return SizedBox(
+              width: 300,
+              child: TicketWidget(
+                order: order,
+                onDonePressed: (orderNumber) {
+                  _vm.updateOrder(orderNumber, 'done');
+                },
+                onPreparingPressed: (orderNumber) {
+                  _vm.updateOrder(orderNumber, 'preparing');
+                },
               ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );

@@ -23,34 +23,31 @@ class TicketWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     const divider = SizedBox(height: 2.0);
     final primaryColor = Theme.of(context).primaryColor;
-    return FractionallySizedBox(
-      widthFactor: 0.3,
-      child: Card(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-          side: BorderSide(
-            color: Theme.of(context).primaryColor,
-          ),
+    return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+        side: BorderSide(
+          color: Colors.purpleAccent,
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Column(
-            children: [
-              TicketHeader(order: order),
-              divider,
-              TicketSubHeader(order: order),
-              Divider(color: primaryColor),
-              TicketDetails(title: 'ITEMS', items: order.items),
-              if (order.lessItems.isNotEmpty) Divider(color: primaryColor),
-              if (order.lessItems.isNotEmpty) TicketDetails(title: 'LESS ITEMS', items: order.lessItems),
-              Divider(color: primaryColor),
-              TicketFooter(
-                order: order,
-                onDonePressed: onDonePressed,
-                onPreparingPressed: onPreparingPressed,
-              ),
-            ],
-          ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          children: [
+            TicketHeader(order: order),
+            divider,
+            TicketSubHeader(order: order),
+            Divider(color: primaryColor),
+            TicketDetails(title: 'ITEMS', items: order.items),
+            if (order.lessItems.isNotEmpty) Divider(color: primaryColor),
+            if (order.lessItems.isNotEmpty) TicketDetails(title: 'LESS ITEMS', items: order.lessItems),
+            Divider(color: primaryColor),
+            TicketFooter(
+              order: order,
+              onDonePressed: onDonePressed,
+              onPreparingPressed: onPreparingPressed,
+            ),
+          ],
         ),
       ),
     );
@@ -242,10 +239,7 @@ class _TicketFooterState extends State<TicketFooter> {
                 child: Center(
                   child: Text(
                     'PREPARING',
-                    style: TextStyle(
-                      color: Theme.of(context).primaryColor,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(color: Theme.of(context).primaryColor, fontWeight: FontWeight.bold, fontSize: 12),
                   ),
                 ),
               ),
@@ -266,10 +260,7 @@ class _TicketFooterState extends State<TicketFooter> {
                 child: Center(
                   child: Text(
                     _count == 5 ? 'DONE' : 'DONE(${_count + 1})',
-                    style: TextStyle(
-                      color: Theme.of(context).primaryColor,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(color: Theme.of(context).primaryColor, fontWeight: FontWeight.bold, fontSize: 12),
                   ),
                 ),
               ),
