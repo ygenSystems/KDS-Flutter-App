@@ -27,7 +27,7 @@ class TicketWidget extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10),
         side: BorderSide(
-          color: Colors.purpleAccent,
+          color: Theme.of(context).primaryColor,
         ),
       ),
       child: Padding(
@@ -93,15 +93,21 @@ class TicketSubHeader extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             if (order.orderType == OrderType.dineIn)
-              Text(
-                'Table: ${order.tableNumber}'.toUpperCase(),
-                style: TextStyle(color: primaryColor),
+              LimitedBox(
+                maxWidth: 50,
+                child: Text(
+                  'Tbl: ${order.tableNumber}'.toUpperCase(),
+                  style: TextStyle(color: primaryColor),
+                ),
               )
             else
               const Text('- - - - - - - -'),
-            Text(
-              'Waiter: ${order.waiter}'.toUpperCase(),
-              style: TextStyle(color: primaryColor),
+            LimitedBox(
+              maxWidth: 150,
+              child: Text(
+                'Wtr: ${order.waiter}'.toUpperCase(),
+                style: TextStyle(color: primaryColor, overflow: TextOverflow.ellipsis),
+              ),
             ),
           ],
         ),
