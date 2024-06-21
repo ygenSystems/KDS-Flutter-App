@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import 'package:kitchen_display_system/models/order.dart';
 import 'package:kitchen_display_system/models/order_types.dart';
 import 'package:kitchen_display_system/pages/kitchen_display_page/kitchen_display_page_vm.dart';
+import 'package:kitchen_display_system/repositories/order_repository.dart';
 import 'package:kitchen_display_system/widgets/ticket_widget.dart';
 
 class KitchenDisplayPage extends StatefulWidget {
@@ -16,59 +17,74 @@ class KitchenDisplayPage extends StatefulWidget {
 }
 
 class _KitchenDisplayPageState extends State<KitchenDisplayPage> {
-  late final KitchenDisplayPageVM _vm;
-  Timer? _updateTimer;
-  int _updateCount = 5;
+  late final KitchenDisplayController _vm;
 
   OrderType _selection = OrderType.all;
   final List<Order> _orders = [];
   List<int> _count = [0, 0, 0, 0];
+  bool _updating = false;
 
   @override
   void initState() {
     super.initState();
     _vm = Get.find();
-    _updateTimer ??= Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (mounted) {
-        setState(() {
-          _updateOrdersSelection();
-          _updateCount--;
-          if (_updateCount == 0) {
-            _updateCount = 5;
-            _vm.getOrders();
-          }
-        });
-      }
+    _updating = true;
+    _vm.getOrders().then((value) async {
+      await Future.delayed(const Duration(seconds: 1));
+      if (!mounted) return;
+      setState(() {
+        _updateOrdersSelection();
+      });
+      _updating = false;
     });
+    Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) return;
+      setState(() {});
+    });
+
+    _vm.getOrderStream().listen((value) {
+      _onUpdatePressed();
+    });
+  }
+
+  void _updateOrdersSelection() {
+    _orders.clear();
+    _count = [0, 0, 0, 0];
+    for (var element in _vm.orders) {
+      if (_selection == OrderType.all) {
+        _orders.add(element);
+      } else if (element.orderType == _selection) {
+        _orders.add(element);
+      }
+      _count[0]++;
+      if (element.orderType == OrderType.dineIn) {
+        _count[1]++;
+      } else if (element.orderType == OrderType.takeAway) {
+        _count[2]++;
+      } else if (element.orderType == OrderType.delivery) {
+        _count[3]++;
+      }
+    }
   }
 
   @override
   void dispose() {
-    _updateTimer?.cancel();
     super.dispose();
+    _vm.dispose();
+    Get.delete<KitchenDisplayController>();
+    Get.delete<OrdersRepository>();
   }
 
-  void _updateOrdersSelection() {
+  void _onUpdatePressed() {
     if (!mounted) return;
-
     setState(() {
-      _orders.clear();
-      _count = [0, 0, 0, 0];
-      for (var element in _vm.orders) {
-        if (_selection == OrderType.all) {
-          _orders.add(element);
-        } else if (element.orderType == _selection) {
-          _orders.add(element);
-        }
-        _count[0]++;
-        if (element.orderType == OrderType.dineIn) {
-          _count[1]++;
-        } else if (element.orderType == OrderType.takeAway) {
-          _count[2]++;
-        } else if (element.orderType == OrderType.delivery) {
-          _count[3]++;
-        }
-      }
+      _updating = true;
+    });
+    _vm.getOrders().then((value) {
+      setState(() {
+        _updateOrdersSelection();
+        _updating = false;
+      });
     });
   }
 
@@ -81,17 +97,18 @@ class _KitchenDisplayPageState extends State<KitchenDisplayPage> {
           count: _count,
           selected: _selection,
           onSelectionChanged: (value) {
-            _selection = value;
-            _updateOrdersSelection();
+            if (!mounted) return;
+            setState(() {
+              _selection = value;
+              _updateOrdersSelection();
+            });
           },
         ),
         actions: [
           TextButton.icon(
-            onPressed: () {
-              _vm.getOrders();
-            },
+            onPressed: _onUpdatePressed,
             icon: const Icon(Icons.refresh),
-            label: Text('Update ${_updateCount}s'),
+            label: Text(_updating ? 'Please Wait' : 'Update'),
           ),
         ],
       ),

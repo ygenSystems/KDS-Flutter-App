@@ -1,11 +1,9 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:kitchen_display_system/models/order.dart';
 import 'package:kitchen_display_system/models/order_status.dart';
 import 'package:kitchen_display_system/pages/collection_display_page/collection_display_page_vm.dart';
+import 'package:kitchen_display_system/repositories/order_repository.dart';
 import 'package:kitchen_display_system/widgets/customer_ticket_widget.dart';
 
 class CollectionDisplayPage extends StatefulWidget {
@@ -17,40 +15,53 @@ class CollectionDisplayPage extends StatefulWidget {
 
 class _CollectionDisplayPageState extends State<CollectionDisplayPage> {
   late final CollectionDisplayPageVM _vm;
-  Timer? _updateTimer;
-  int _updateCount = 5;
+  final List<Order> _preparingOrders = [];
+  final List<Order> _doneOrders = [];
+  bool _updating = false;
 
   @override
   void initState() {
     super.initState();
     _vm = Get.find();
-    _updateTimer ??= Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (mounted) {
-        _updateCount--;
-        if (_updateCount == 0) {
-          _updateCount = 5;
-          _vm.getOrders();
-        }
-        _updateOrders();
-      }
+    Future.delayed(const Duration(seconds: 1)).then((value) {
+      _onUpdatePressed();
+    });
+
+    _vm.getOrdersStream().listen((value) async {
+      await _onUpdatePressed();
     });
   }
 
-  final List<Order> _preparingOrders = [];
-  final List<Order> _doneOrders = [];
-
   void _updateOrders() {
-    setState(() {
-      _preparingOrders.clear();
-      _doneOrders.clear();
-      for (var order in _vm.orders) {
-        if (order.status == OrderStatus.preparing) {
-          _preparingOrders.add(order);
-        } else if (order.status == OrderStatus.done) {
-          _doneOrders.add(order);
-        }
+    _preparingOrders.clear();
+    _doneOrders.clear();
+    for (var order in _vm.orders) {
+      if (order.status == OrderStatus.preparing) {
+        _preparingOrders.add(order);
+      } else if (order.status == OrderStatus.done) {
+        _doneOrders.add(order);
       }
+    }
+  }
+
+  Future<void> _onUpdatePressed() async {
+    if (!mounted) return;
+    setState(() {
+      _updating = true;
     });
+    await _vm.getOrders();
+    setState(() {
+      _updating = false;
+      _updateOrders();
+    });
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _vm.dispose();
+    Get.delete<CollectionDisplayPageVM>();
+    Get.delete<OrdersRepository>();
   }
 
   @override
@@ -65,11 +76,9 @@ class _CollectionDisplayPageState extends State<CollectionDisplayPage> {
       appBar: AppBar(
         actions: [
           TextButton.icon(
-            onPressed: () {
-              _vm.getOrders();
-            },
+            onPressed: _onUpdatePressed,
             icon: const Icon(Icons.refresh),
-            label: Text('Update ${_updateCount}s'),
+            label: Text(_updating ? 'Please Wait' : 'Update'),
           ),
         ],
       ),

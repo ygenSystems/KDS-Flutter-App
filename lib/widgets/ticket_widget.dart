@@ -281,19 +281,28 @@ class _TicketFooterState extends State<TicketFooter> {
   int _count = 5;
 
   void _onDonePressed() {
-    if (_timer == null || !_timer!.isActive) {
-      _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-        setState(() {
-          if (_count > 0) {
-            _count--;
-          } else {
-            widget.onDonePressed(widget.order.id);
-            _timer?.cancel();
-            _count = 5;
-          }
-        });
+    if (_timer != null) {
+      setState(() {
+        _timer?.cancel();
+        _timer = null;
+        _count = 5;
       });
+    } else {
+      _timer = Timer.periodic(const Duration(seconds: 1), _timerCallback);
     }
+  }
+
+  void _timerCallback(timer) {
+    if (!mounted) return;
+    setState(() {
+      if (_count > 0) {
+        _count--;
+      } else {
+        widget.onDonePressed(widget.order.id);
+        _timer?.cancel();
+        _count = 5;
+      }
+    });
   }
 
   void _onPreparingPressed() {

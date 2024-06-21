@@ -120,15 +120,13 @@ class _LandingPageState extends State<LandingPage> {
     final serverIp = _box.read<String?>('server_ip');
     final uri = 'http://$serverIp/';
     if (serverIp != null && Uri.parse(uri).isAbsolute) {
-      final repo = OrdersRepository(serverIp);
-      _resetDep(KitchenDisplayPageVM(repo));
-      _resetDep(CollectionDisplayPageVM(repo));
+      Get.put(OrdersRepository());
+      if (page is KitchenDisplayPage) {
+        Get.put(KitchenDisplayController());
+      } else if (page is CollectionDisplayPage) {
+        Get.put(CollectionDisplayPageVM());
+      }
       Navigator.of(context).push(MaterialPageRoute(builder: (context) => page));
     }
-  }
-
-  S _resetDep<S>(S vm) {
-    if (Get.isRegistered<S>()) Get.delete<S>();
-    return Get.put<S>(vm);
   }
 }

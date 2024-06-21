@@ -1,37 +1,36 @@
+import 'package:get/get.dart';
 import 'package:kitchen_display_system/models/order.dart';
 import 'package:kitchen_display_system/repositories/order_repository.dart';
 
-class KitchenDisplayPageVM {
-  late final OrdersRepository _ordersRepository;
-  KitchenDisplayPageVM(OrdersRepository ordersRepository) {
-    _ordersRepository = ordersRepository;
+class KitchenDisplayController {
+  late final OrdersRepository _repo;
+  KitchenDisplayController() {
+    _repo = Get.find<OrdersRepository>();
   }
 
   List<Order> orders = [];
 
-  bool _getRequested = false;
   Future<List<Order>> getOrders() async {
     try {
-      if (_getRequested) return orders;
-      _getRequested = true;
-      return orders = await _ordersRepository.getKDSOrders();
+      return orders = await _repo.getKDSOrders();
     } catch (e) {
       return orders;
-    } finally {
-      _getRequested = false;
     }
   }
 
-  bool _updateRequested = false;
-  Future<void> updateOrder(String orderNumber, String s) async {
-    try {
-      if (_updateRequested) return;
-      _updateRequested = true;
-      await _ordersRepository.updateOrder(orderNumber, s);
-    } catch (e) {
-      print(e);
-    } finally {
-      _updateRequested = false;
+  void updateOrder(String orderNumber, String status) {
+    _repo.updateOrderWSocket(orderNumber, status);
+  }
+
+  Stream<bool> getOrderStream() async* {
+    await for (var event in _repo.setupKDSSocket()) {
+      if (event) {
+        yield event;
+      }
     }
+  }
+
+  void dispose() {
+    _repo.dispose();
   }
 }

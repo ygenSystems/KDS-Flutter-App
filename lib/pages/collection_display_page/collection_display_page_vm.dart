@@ -1,23 +1,30 @@
+import 'package:get/get.dart';
 import 'package:kitchen_display_system/models/order.dart';
 import 'package:kitchen_display_system/repositories/order_repository.dart';
 
 class CollectionDisplayPageVM {
-  late final OrdersRepository _ordersRepository;
-  CollectionDisplayPageVM(OrdersRepository ordersRepository) {
-    _ordersRepository = ordersRepository;
+  late final OrdersRepository _repo;
+  CollectionDisplayPageVM() {
+    _repo = Get.find<OrdersRepository>();
   }
 
   List<Order> orders = [];
 
-  bool _getRequested = false;
   Future<List<Order>> getOrders() async {
     try {
-      if (_getRequested) return orders;
-      _getRequested = true;
-      return orders = await _ordersRepository.getCDSOrders();
+      return orders = await _repo.getCDSOrders();
     } catch (e) {
-      _getRequested = false;
       return orders;
     }
+  }
+
+  Stream<bool> getOrdersStream() async* {
+    await for (var event in _repo.setupCDSSocket()) {
+      if (event) yield true;
+    }
+  }
+
+  void dispose() {
+    _repo.dispose();
   }
 }
