@@ -1,20 +1,17 @@
-import 'dart:collection';
-
 import 'package:kitchen_display_system/models/item.dart';
-import 'package:kitchen_display_system/models/item_status.dart';
 
 class Deal extends Item {
   final List<DealItem> dealItems;
   Deal({
-    required String id,
-    required String name,
-    required String department,
-    required String comment,
-    required bool isNew,
-    required String quantity,
-    required ItemStatus status,
+    required super.id,
+    required super.name,
+    required super.department,
+    required super.comment,
+    required super.isNew,
+    required super.quantity,
+    required super.status,
     required this.dealItems,
-  }) : super(id: id, department: department, name: name, comment: comment, isNew: isNew, quantity: quantity, status: status);
+  });
   Deal.fromMap(super.map)
       : dealItems = (map['dealItems'] as List<dynamic>).map((e) => DealItem.fromMap(e)).toList(),
         super.fromMap();
