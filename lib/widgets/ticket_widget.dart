@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:kitchen_display_system/models/deal.dart';
 import 'package:kitchen_display_system/models/item.dart';
 import 'package:kitchen_display_system/models/order.dart';
 import 'package:kitchen_display_system/models/order_status.dart';
@@ -9,11 +10,13 @@ import 'package:kitchen_display_system/models/order_types.dart';
 import 'package:kitchen_display_system/widgets/dashed_divider.dart';
 
 class TicketWidget extends StatelessWidget {
+  final String selectedDepartment;
   final Order order;
   final void Function(String orderNumber) onDonePressed;
   final void Function(String orderNumber) onPreparingPressed;
   const TicketWidget({
     super.key,
+    required this.selectedDepartment,
     required this.order,
     required this.onDonePressed,
     required this.onPreparingPressed,
@@ -38,9 +41,18 @@ class TicketWidget extends StatelessWidget {
             divider,
             TicketSubHeader(order: order),
             Divider(color: primaryColor),
-            TicketDetails(title: 'ITEMS', items: order.items),
+            TicketDetails(
+              title: 'ITEMS',
+              selectedDepartment: selectedDepartment,
+              order: order,
+            ),
             if (order.lessItems.isNotEmpty) Divider(color: primaryColor),
-            if (order.lessItems.isNotEmpty) TicketDetails(title: 'LESS ITEMS', items: order.lessItems),
+            if (order.lessItems.isNotEmpty)
+              TicketDetails(
+                title: 'LESS ITEMS',
+                selectedDepartment: selectedDepartment,
+                order: order,
+              ),
             Divider(color: primaryColor),
             TicketFooter(
               order: order,
@@ -128,16 +140,77 @@ class TicketSubHeader extends StatelessWidget {
 
 class TicketDetails extends StatelessWidget {
   final String title;
-  final List<Item> items;
+  final Order order;
+  final String selectedDepartment;
   const TicketDetails({
     super.key,
     required this.title,
-    required this.items,
+    required this.order,
+    required this.selectedDepartment,
   });
 
   @override
   Widget build(BuildContext context) {
     final primaryColor = Theme.of(context).primaryColor;
+    final items = <Item>[];
+    final lessItems = <Item>[];
+    final deals = <Deal>[];
+    final lessDeals = <Deal>[];
+    if (selectedDepartment == 'ALL') {
+      items.addAll(order.items);
+      deals.addAll(order.deals);
+      lessItems.addAll(order.deals);
+      lessDeals.addAll(order.lessDeals);
+    } else {
+      for (var item in order.items) {
+        if (item.department == selectedDepartment) {
+          items.add(item);
+        }
+      }
+
+      for (var deal in order.deals) {
+        final list = <DealItem>[];
+        for (var dealItem in deal.dealItems) {
+          if (dealItem.department == selectedDepartment) {
+            list.add(dealItem);
+          }
+        }
+        if (list.isEmpty) continue;
+        final d = Deal(
+          id: deal.id,
+          name: deal.name,
+          department: deal.department,
+          comment: deal.comment,
+          isNew: deal.isNew,
+          quantity: deal.quantity,
+          status: deal.status,
+          dealItems: list,
+        );
+        deals.add(d);
+      }
+
+      for (var deal in order.lessDeals) {
+        final list = <DealItem>[];
+        for (var dealItem in deal.dealItems) {
+          if (dealItem.department == selectedDepartment) {
+            list.add(dealItem);
+          }
+        }
+        if (list.isEmpty) continue;
+        final d = Deal(
+          id: deal.id,
+          name: deal.name,
+          department: deal.department,
+          comment: deal.comment,
+          isNew: deal.isNew,
+          quantity: deal.quantity,
+          status: deal.status,
+          dealItems: list,
+        );
+        lessDeals.add(d);
+      }
+    }
+
     return Column(
       children: [
         Column(
@@ -154,58 +227,153 @@ class TicketDetails extends StatelessWidget {
             Divider(color: primaryColor),
           ],
         ),
-        ...List.generate(
-          items.length,
-          (index) {
-            final item = items[index];
-            return Column(
+        ..._getItems(items, primaryColor),
+        ..._getDeals(deals, primaryColor),
+        ..._getItems(lessItems, primaryColor),
+        ..._getDeals(lessDeals, primaryColor),
+      ],
+    );
+  }
+
+  List<Widget> _getItems(List<Item> items, Color primaryColor) {
+    return List.generate(
+      items.length,
+      (index) {
+        final item = items[index];
+        return Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        item.name.toUpperCase(),
-                        style: TextStyle(
-                          color: title == 'LESS ITEMS'
-                              ? Colors.red
-                              : item.isNew
-                                  ? Colors.green
-                                  : primaryColor,
-                        ),
-                      ),
+                Flexible(
+                  child: Text(
+                    item.name.toUpperCase(),
+                    style: TextStyle(
+                      color: title == 'LESS ITEMS'
+                          ? Colors.red
+                          : item.isNew
+                              ? Colors.green
+                              : primaryColor,
+                      fontWeight: FontWeight.bold,
                     ),
-                    Text(
-                      item.quantity.toString(),
+                  ),
+                ),
+                Text(
+                  item.quantity.toString(),
+                  style: TextStyle(
+                    color: title == 'LESS ITEMS'
+                        ? Colors.red
+                        : item.isNew
+                            ? Colors.green
+                            : primaryColor,
+                  ),
+                ),
+              ],
+            ),
+            if (item.comment.isNotEmpty)
+              Row(
+                children: [
+                  Text(
+                    '- ${item.comment}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontStyle: FontStyle.italic,
+                      color: Colors.orange,
+                    ),
+                  ),
+                ],
+              ),
+            const DashedDivider(),
+          ],
+        );
+      },
+    );
+  }
+
+  List<Widget> _getDeals(List<Deal> deals, Color primaryColor) {
+    return List.generate(
+      deals.length,
+      (index) {
+        final deal = deals[index];
+        return Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Flexible(
+                  child: Text(
+                    deal.name.toUpperCase(),
+                    style: TextStyle(
+                      color: title == 'LESS ITEMS'
+                          ? Colors.red
+                          : deal.isNew
+                              ? Colors.green
+                              : primaryColor,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                Text(
+                  deal.quantity.toString(),
+                  style: TextStyle(
+                    color: title == 'LESS ITEMS'
+                        ? Colors.red
+                        : deal.isNew
+                            ? Colors.green
+                            : primaryColor,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            ...List.generate(deal.dealItems.length, (index) {
+              final dealitem = deal.dealItems[index];
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Flexible(
+                    child: Text(
+                      '   ${dealitem.name.toUpperCase()}',
                       style: TextStyle(
                         color: title == 'LESS ITEMS'
                             ? Colors.red
-                            : item.isNew
+                            : deal.isNew
                                 ? Colors.green
                                 : primaryColor,
+                        fontStyle: FontStyle.italic,
                       ),
                     ),
-                  ],
-                ),
-                if (item.comment.isNotEmpty)
-                  Row(
-                    children: [
-                      Text(
-                        '- ${item.comment}',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontStyle: FontStyle.italic,
-                          color: Colors.orange,
-                        ),
-                      ),
-                    ],
                   ),
-                const DashedDivider(),
-              ],
-            );
-          },
-        )
-      ],
+                  Text(
+                    '     ${dealitem.quantity.toString()}',
+                    style: TextStyle(
+                      color: title == 'LESS ITEMS'
+                          ? Colors.red
+                          : deal.isNew
+                              ? Colors.green
+                              : primaryColor,
+                    ),
+                  ),
+                ],
+              );
+            }),
+            if (deal.comment.isNotEmpty)
+              Row(
+                children: [
+                  Text(
+                    '- ${deal.comment}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontStyle: FontStyle.italic,
+                      color: Colors.orange,
+                    ),
+                  ),
+                ],
+              ),
+            const DashedDivider(),
+          ],
+        );
+      },
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:kitchen_display_system/models/department.dart';
 import 'package:kitchen_display_system/models/order.dart';
 import 'package:kitchen_display_system/repositories/order_repository.dart';
 
@@ -9,12 +10,21 @@ class KitchenDisplayController {
   }
 
   List<Order> orders = [];
+  List<Department> departments = [];
 
   Future<List<Order>> getOrders() async {
     try {
       return orders = await _repo.getKDSOrders();
     } catch (e) {
       return orders;
+    }
+  }
+
+  Future<List<Department>> getDepartments() async {
+    try {
+      return departments = await _repo.getDepartments();
+    } catch (e) {
+      return departments;
     }
   }
 

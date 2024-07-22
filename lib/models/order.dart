@@ -1,4 +1,5 @@
 import 'package:intl/intl.dart';
+import 'package:kitchen_display_system/models/deal.dart';
 import 'package:kitchen_display_system/models/item.dart';
 import 'package:kitchen_display_system/models/order_status.dart';
 import 'package:kitchen_display_system/models/order_types.dart';
@@ -12,7 +13,9 @@ class Order {
   final String tableNumber;
   final OrderStatus status;
   final List<Item> items;
+  final List<Deal> deals;
   final List<Item> lessItems;
+  final List<Deal> lessDeals;
   Duration get duration => DateTime.now().difference(orderTime);
 
   Order({
@@ -24,7 +27,9 @@ class Order {
     required this.tableNumber,
     required this.status,
     required this.items,
+    required this.deals,
     required this.lessItems,
+    required this.lessDeals,
   });
 
   Order.fromMap({required Map<String, dynamic> map})
@@ -36,7 +41,9 @@ class Order {
         tableNumber = map['table'],
         status = OrderStatus.values.firstWhere((e) => e.toString() == 'OrderStatus.${map['kdsStatus']}'),
         items = (map['items'] as List<dynamic>).map((e) => Item.fromMap(e)).toList(),
-        lessItems = (map['lessItems'] as List<dynamic>).map((e) => Item.fromMap(e)).toList();
+        deals = (map['deals'] as List<dynamic>).map((e) => Deal.fromMap(e)).toList(),
+        lessItems = (map['lessItems'] as List<dynamic>).map((e) => Item.fromMap(e)).toList(),
+        lessDeals = (map['lessDeals'] as List<dynamic>).map((e) => Deal.fromMap(e)).toList();
 
   Order.empty()
       : this(
@@ -48,6 +55,8 @@ class Order {
           tableNumber: '',
           status: OrderStatus.preparing,
           items: [],
+          deals: [],
           lessItems: [],
+          lessDeals:  [],
         );
 }

@@ -5,6 +5,7 @@ class Item {
   final String name;
   final String quantity;
   final String comment;
+  final String department;
   final ItemStatus status;
   final bool isNew;
 
@@ -12,6 +13,7 @@ class Item {
       : id = '',
         name = '',
         quantity = '',
+        department = '',
         comment = '',
         status = ItemStatus.pending,
         isNew = true;
@@ -21,6 +23,7 @@ class Item {
     required this.name,
     required this.quantity,
     required this.comment,
+    required this.department,
     required this.status,
     required this.isNew,
   });
@@ -29,6 +32,7 @@ class Item {
       : id = map['id'].toString(),
         name = map['name'],
         quantity = map['quantity'].toString(),
+        department = map['department'],
         comment = map['comment'],
         status = ItemStatus.pending,
         isNew = map['isNew'] ?? true;
