@@ -19,6 +19,7 @@ class _LandingPageState extends State<LandingPage> {
   bool _isValidIp = true;
   final _controller = TextEditingController();
 
+  @override
   initState() {
     super.initState();
     final serverIp = _box.read('server_ip');
