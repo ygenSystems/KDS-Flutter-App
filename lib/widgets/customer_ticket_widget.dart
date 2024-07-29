@@ -14,6 +14,7 @@ class CustomerTicket extends StatelessWidget {
           width: 2,
         ),
         borderRadius: BorderRadius.circular(8),
+        color: Colors.white,
       ),
       child: Padding(
         padding: const EdgeInsets.all(8.0),

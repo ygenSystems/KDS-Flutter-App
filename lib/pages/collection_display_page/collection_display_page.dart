@@ -67,10 +67,10 @@ class _CollectionDisplayPageState extends State<CollectionDisplayPage> {
   @override
   Widget build(BuildContext context) {
     const delegate = SliverGridDelegateWithFixedCrossAxisCount(
-      crossAxisCount: 2,
+      crossAxisCount: 4,
       crossAxisSpacing: 8.0,
       mainAxisSpacing: 8.0,
-      childAspectRatio: 4.5,
+      childAspectRatio: 2,
     );
     return Scaffold(
       appBar: AppBar(
@@ -82,52 +82,63 @@ class _CollectionDisplayPageState extends State<CollectionDisplayPage> {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8.0),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                children: [
-                  Text(
-                    'PREPARING',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  Expanded(
-                    child: GridView.builder(
-                      gridDelegate: delegate,
-                      itemCount: _preparingOrders.length,
-                      itemBuilder: (context, index) {
-                        final order = _preparingOrders[index];
-                        return CustomerTicket(order: order);
-                      },
+      body: ColoredBox(
+        color: Theme.of(context).primaryColor,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  children: [
+                    Text(
+                      'PREPARING',
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleLarge!
+                          .copyWith(color: Colors.white),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            const VerticalDivider(),
-            Expanded(
-              child: Column(
-                children: [
-                  Text(
-                    'NOW SERVING',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  Expanded(
-                    child: GridView.builder(
-                      gridDelegate: delegate,
-                      itemCount: _doneOrders.length,
-                      itemBuilder: (context, index) {
-                        final order = _doneOrders[index];
-                        return CustomerTicket(order: order);
-                      },
+                    const Divider(),
+                    Expanded(
+                      child: GridView.builder(
+                        gridDelegate: delegate,
+                        itemCount: _preparingOrders.length,
+                        itemBuilder: (context, index) {
+                          final order = _preparingOrders[index];
+                          return CustomerTicket(order: order);
+                        },
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+              const VerticalDivider(),
+              Expanded(
+                child: Column(
+                  children: [
+                    Text(
+                      'NOW SERVING',
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleLarge!
+                          .copyWith(color: Colors.white),
+                    ),
+                    const Divider(),
+                    Expanded(
+                      child: GridView.builder(
+                        gridDelegate: delegate,
+                        itemCount: _doneOrders.length,
+                        itemBuilder: (context, index) {
+                          final order = _doneOrders[index];
+                          return CustomerTicket(order: order);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
