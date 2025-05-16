@@ -25,7 +25,7 @@ class _LandingPageState extends State<LandingPage> {
         actions: [
           IconButton(
             onPressed: () {
-              Get.to(const SettingsPage());
+              Get.to(() => const SettingsPage());
             },
             icon: const Icon(Icons.settings),
           ),
