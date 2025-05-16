@@ -10,6 +10,7 @@ class Deal extends Item {
     required super.isNew,
     required super.quantity,
     required super.status,
+    required super.hexColor,
     required this.dealItems,
   });
   Deal.fromMap(super.map)
@@ -20,15 +21,18 @@ class Deal extends Item {
 class DealItem {
   final String name;
   final int quantity;
+  final String? hexColor;
   final String department;
 
   DealItem.empty()
       : name = '',
         quantity = 0,
-        department = '';
+        department = '',
+        hexColor = null;
 
   DealItem.fromMap(Map<String, dynamic> map)
       : name = map['name'],
         quantity = map['quantity'],
-        department = map['department'];
+        department = map['department'],
+        hexColor = map['hexColor'];
 }

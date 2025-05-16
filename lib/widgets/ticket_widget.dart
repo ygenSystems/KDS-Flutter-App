@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:hexcolor/hexcolor.dart';
 import 'package:intl/intl.dart';
 import 'package:kitchen_display_system/models/deal.dart';
 import 'package:kitchen_display_system/models/item.dart';
@@ -118,7 +119,8 @@ class TicketSubHeader extends StatelessWidget {
               maxWidth: 150,
               child: Text(
                 'Wtr: ${order.waiter}'.toUpperCase(),
-                style: TextStyle(color: primaryColor, overflow: TextOverflow.ellipsis),
+                style: TextStyle(
+                    color: primaryColor, overflow: TextOverflow.ellipsis),
               ),
             ),
           ],
@@ -127,7 +129,8 @@ class TicketSubHeader extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Time: ${DateFormat('hh:mm a').format(order.orderTime)}'.toUpperCase(),
+              'Time: ${DateFormat('hh:mm a').format(order.orderTime)}'
+                  .toUpperCase(),
               style: TextStyle(color: primaryColor),
             ),
             const Text(''),
@@ -185,6 +188,7 @@ class TicketDetails extends StatelessWidget {
           quantity: deal.quantity,
           status: deal.status,
           dealItems: list,
+          hexColor: deal.hexColor,
         );
         deals.add(d);
       }
@@ -206,6 +210,7 @@ class TicketDetails extends StatelessWidget {
           quantity: deal.quantity,
           status: deal.status,
           dealItems: list,
+          hexColor: deal.hexColor,
         );
         lessDeals.add(d);
       }
@@ -253,7 +258,9 @@ class TicketDetails extends StatelessWidget {
                           ? Colors.red
                           : item.isNew
                               ? Colors.green
-                              : primaryColor,
+                              : item.hexColor == null
+                                  ? primaryColor
+                                  : HexColor(item.hexColor!),
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -308,7 +315,9 @@ class TicketDetails extends StatelessWidget {
                           ? Colors.red
                           : deal.isNew
                               ? Colors.green
-                              : primaryColor,
+                              : deal.hexColor == null
+                                  ? primaryColor
+                                  : HexColor(deal.hexColor!),
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -320,7 +329,9 @@ class TicketDetails extends StatelessWidget {
                         ? Colors.red
                         : deal.isNew
                             ? Colors.green
-                            : primaryColor,
+                            : deal.hexColor == null
+                                ? primaryColor
+                                : HexColor(deal.hexColor!),
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -404,7 +415,9 @@ class _TicketFooterState extends State<TicketFooter> {
             onTap: _onPreparingPressed,
             child: DecoratedBox(
               decoration: BoxDecoration(
-                color: status == OrderStatus.preparing ? Theme.of(context).primaryColor.withOpacity(0.3) : null,
+                color: status == OrderStatus.preparing
+                    ? Theme.of(context).primaryColor.withOpacity(0.3)
+                    : null,
                 border: Border.all(color: Theme.of(context).primaryColor),
                 borderRadius: BorderRadius.circular(10),
               ),
@@ -413,7 +426,10 @@ class _TicketFooterState extends State<TicketFooter> {
                 child: Center(
                   child: Text(
                     'PREPARING',
-                    style: TextStyle(color: Theme.of(context).primaryColor, fontWeight: FontWeight.bold, fontSize: 12),
+                    style: TextStyle(
+                        color: Theme.of(context).primaryColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12),
                   ),
                 ),
               ),
@@ -434,7 +450,10 @@ class _TicketFooterState extends State<TicketFooter> {
                 child: Center(
                   child: Text(
                     _count == 5 ? 'DONE' : 'DONE(${_count + 1})',
-                    style: TextStyle(color: Theme.of(context).primaryColor, fontWeight: FontWeight.bold, fontSize: 12),
+                    style: TextStyle(
+                        color: Theme.of(context).primaryColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12),
                   ),
                 ),
               ),
