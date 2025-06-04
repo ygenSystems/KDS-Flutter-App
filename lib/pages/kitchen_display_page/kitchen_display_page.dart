@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:get/get.dart';
+import 'package:kitchen_display_system/models/department.dart';
 import 'package:kitchen_display_system/models/order.dart';
 import 'package:kitchen_display_system/models/order_types.dart';
 import 'package:kitchen_display_system/pages/kitchen_display_page/kitchen_display_page_vm.dart';
@@ -21,14 +22,23 @@ class _KitchenDisplayPageState extends State<KitchenDisplayPage> {
 
   OrderType _selection = OrderType.all;
   final List<Order> _orders = [];
+  final List<Department> _departments = [];
   List<int> _count = [0, 0, 0, 0];
   bool _updating = false;
+  String _selectedDepartment = 'ALL';
 
   @override
   void initState() {
     super.initState();
     _vm = Get.find();
     _updating = true;
+    _vm.getDepartments().then((value) async {
+      await Future.delayed(const Duration(seconds: 3));
+      if (!mounted) return;
+      setState(() {
+        _departments.addAll(value);
+      });
+    });
     _vm.getOrders().then((value) async {
       await Future.delayed(const Duration(seconds: 1));
       if (!mounted) return;
@@ -90,19 +100,77 @@ class _KitchenDisplayPageState extends State<KitchenDisplayPage> {
 
   @override
   Widget build(BuildContext context) {
+    bool itemExists = false;
+    final listOrders = <Order>[];
+    if (_selectedDepartment != 'ALL') {
+      for (var order in _orders) {
+        for (var item in order.items) {
+          if (item.department == _selectedDepartment) {
+            itemExists = true;
+            break;
+          }
+        }
+        for (var deal in order.deals) {
+          for (var dealItem in deal.dealItems) {
+            if (dealItem.department == _selectedDepartment) {
+              itemExists = true;
+              break;
+            }
+          }
+          if (itemExists) break;
+        }
+        for (var lessItem in order.lessItems) {
+          if (lessItem.department == _selectedDepartment) {
+            itemExists = true;
+            break;
+          }
+        }
+
+        if (itemExists) {
+          listOrders.add(order);
+          itemExists = false;
+        }
+      }
+    } else {
+      listOrders.addAll(_orders);
+    }
+
     return Scaffold(
+      backgroundColor: Theme.of(context).primaryColor,
       appBar: AppBar(
         centerTitle: true,
-        title: SingleChoice(
-          count: _count,
-          selected: _selection,
-          onSelectionChanged: (value) {
-            if (!mounted) return;
-            setState(() {
-              _selection = value;
-              _updateOrdersSelection();
-            });
-          },
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            DropdownMenu<String>(
+              initialSelection: _selectedDepartment,
+              width: 250,
+              dropdownMenuEntries: _departments
+                  .map(
+                    (e) => DropdownMenuEntry<String>(
+                      value: e.name,
+                      label: e.name,
+                    ),
+                  )
+                  .toList(),
+              onSelected: (value) {
+                setState(() {
+                  _selectedDepartment = value ?? 'ALL';
+                });
+              },
+            ),
+            SingleChoice(
+              count: _count,
+              selected: _selection,
+              onSelectionChanged: (value) {
+                if (!mounted) return;
+                setState(() {
+                  _selection = value;
+                  _updateOrdersSelection();
+                });
+              },
+            ),
+          ],
         ),
         actions: [
           TextButton.icon(
@@ -115,19 +183,22 @@ class _KitchenDisplayPageState extends State<KitchenDisplayPage> {
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8.0),
         child: MasonryGridView.count(
-          itemCount: _orders.length,
+          itemCount: listOrders.length,
           crossAxisCount: 4,
           itemBuilder: (context, index) {
-            final order = _orders[index];
+            final order = listOrders[index];
+
             return SizedBox(
               width: 300,
               child: TicketWidget(
+                selectedDepartment: _selectedDepartment,
                 order: order,
                 onDonePressed: (orderNumber) {
                   _vm.updateOrder(orderNumber, 'done');
                 },
                 onPreparingPressed: (orderNumber) {
                   _vm.updateOrder(orderNumber, 'preparing');
+                  _vm.stopSound();
                 },
               ),
             );
@@ -177,7 +248,8 @@ class SingleChoice extends StatelessWidget {
         ),
       ],
       selected: <OrderType>{selected},
-      onSelectionChanged: (Set<OrderType> newSelection) => onSelectionChanged(newSelection.first),
+      onSelectionChanged: (Set<OrderType> newSelection) =>
+          onSelectionChanged(newSelection.first),
     );
   }
 }
