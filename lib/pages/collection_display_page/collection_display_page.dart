@@ -50,6 +50,7 @@ class _CollectionDisplayPageState extends State<CollectionDisplayPage> {
       _updating = true;
     });
     await _vm.getOrders();
+    if(!mounted) return;
     setState(() {
       _updating = false;
       _updateOrders();

@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:kitchen_display_system/models/department.dart';
@@ -54,9 +53,20 @@ class KitchenDisplayController {
   }
 
   Future<void> _playNewOrderSound() async {
-    // Replace with your sound asset path or URL
     final sound = GetStorage().read<String?>('sound') ?? 'new_order1.mp3';
+    final repeat = GetStorage().read<bool>('repeat_sound') ?? false;
+    if (repeat) {
+      await _audioPlayer.setReleaseMode(ReleaseMode.loop);
+    } else {
+      await _audioPlayer.setReleaseMode(ReleaseMode.stop);
+    }
     await _audioPlayer.play(AssetSource(sound));
+  }
+
+  Future<void> stopSound() async {
+    if (_audioPlayer.state == PlayerState.playing) {
+      await _audioPlayer.stop();
+    }
   }
 
   Future<List<Department>> getDepartments() async {

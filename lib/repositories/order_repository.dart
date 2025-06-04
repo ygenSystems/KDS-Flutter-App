@@ -72,7 +72,6 @@ class OrdersRepository {
   }
 
   Future<List<Order>> getCDSOrders() async {
-    //
     final response = await _dio.get('/CDSOrders');
     if (response.statusCode != 200) {
       throw Exception('Failed to load orders');

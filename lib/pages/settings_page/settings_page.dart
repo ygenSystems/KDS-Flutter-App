@@ -14,7 +14,7 @@ class _SettingsPageState extends State<SettingsPage> {
   final _isValidIp = true.obs;
   final _box = GetStorage();
   final _controller = TextEditingController();
-
+  final _switchValue = false.obs;
   final audioPlayer = AudioPlayer();
   final _soundList = <String, String>{
     'new_order1': 'New Order 1',
@@ -120,6 +120,17 @@ class _SettingsPageState extends State<SettingsPage> {
                 await _box.write('sound', sound);
                 Get.snackbar('Setting', 'Sound saved');
               },
+            ),
+            Obx(
+              () => SwitchListTile(
+                title: const Text('Repeat Sound'),
+                subtitle: const Text('Repeat sound when new order comes'),
+                value: _switchValue.value,
+                onChanged: (value) async {
+                  _switchValue.value = value;
+                  await _box.write('repeat_sound', value);
+                },
+              ),
             ),
           ],
         ),

@@ -198,6 +198,7 @@ class _KitchenDisplayPageState extends State<KitchenDisplayPage> {
                 },
                 onPreparingPressed: (orderNumber) {
                   _vm.updateOrder(orderNumber, 'preparing');
+                  _vm.stopSound();
                 },
               ),
             );
@@ -247,7 +248,8 @@ class SingleChoice extends StatelessWidget {
         ),
       ],
       selected: <OrderType>{selected},
-      onSelectionChanged: (Set<OrderType> newSelection) => onSelectionChanged(newSelection.first),
+      onSelectionChanged: (Set<OrderType> newSelection) =>
+          onSelectionChanged(newSelection.first),
     );
   }
 }
