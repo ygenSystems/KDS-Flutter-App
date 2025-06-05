@@ -16,43 +16,19 @@ class KitchenDisplayController {
   List<Order> orders = [];
   List<Department> departments = [];
 
-  Future<List<Order>> getOrders() async {
+  Future<List<Order>> getOrders(String department) async {
     try {
-      final newOrders = await _repo.getKDSOrders();
-      bool itemsChanged = false;
-      for (var newOrder in newOrders) {
-        final prevOrder =
-            orders.firstWhereOrNull((o) => o.number == newOrder.number);
-        if (prevOrder != null) {
-          if (newOrder.items.length != prevOrder.items.length ||
-              newOrder.lessItems.length != prevOrder.lessItems.length) {
-            itemsChanged = true;
-            break;
-          }
-        } else {
-          // New order added
-          itemsChanged = true;
-          break;
-        }
-      }
-      // Do NOT play sound if an order is removed (skip this block)
-      // else if (orders.isEmpty && newOrders.isNotEmpty) {
-      //   itemsChanged = true;
-      // }
-      if (orders.isEmpty && newOrders.isNotEmpty) {
-        itemsChanged = true;
-      }
-      if (itemsChanged) {
-        _playNewOrderSound();
-      }
-      orders = newOrders;
+      orders = await _repo.getKDSOrders(department);
       return orders;
     } catch (e) {
       return orders;
     }
   }
 
-  Future<void> _playNewOrderSound() async {
+  Future<void> playSound() async {
+    if (_audioPlayer.state == PlayerState.playing) {
+      await _audioPlayer.stop();
+    }
     final sound = GetStorage().read<String?>('sound') ?? 'new_order1.mp3';
     final repeat = GetStorage().read<bool>('repeat_sound') ?? false;
     if (repeat) {

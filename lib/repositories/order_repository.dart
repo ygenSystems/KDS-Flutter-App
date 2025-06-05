@@ -57,8 +57,10 @@ class OrdersRepository {
     }
   }
 
-  Future<List<Order>> getKDSOrders() async {
-    final response = await _dio.get('/KDSOrders');
+  Future<List<Order>> getKDSOrders(String department) async {
+    final response = await _dio.get('/KDSOrders', queryParameters: {
+      'department': department,
+    });
     if (response.statusCode != 200) {
       throw Exception('Failed to load orders');
     }

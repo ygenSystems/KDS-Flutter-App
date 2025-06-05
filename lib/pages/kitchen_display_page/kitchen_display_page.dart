@@ -5,6 +5,7 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:get/get.dart';
 import 'package:kitchen_display_system/models/department.dart';
 import 'package:kitchen_display_system/models/order.dart';
+import 'package:kitchen_display_system/models/order_status.dart';
 import 'package:kitchen_display_system/models/order_types.dart';
 import 'package:kitchen_display_system/pages/kitchen_display_page/kitchen_display_page_vm.dart';
 import 'package:kitchen_display_system/repositories/order_repository.dart';
@@ -20,51 +21,48 @@ class KitchenDisplayPage extends StatefulWidget {
 class _KitchenDisplayPageState extends State<KitchenDisplayPage> {
   late final KitchenDisplayController _vm;
 
-  OrderType _selection = OrderType.all;
-  final List<Order> _orders = [];
-  final List<Department> _departments = [];
-  List<int> _count = [0, 0, 0, 0];
-  bool _updating = false;
-  String _selectedDepartment = 'ALL';
+  final _selection = OrderType.all.obs;
+  final _orders = <Order>[].obs;
+  final _departments = <Department>[].obs;
+  final _count = [0, 0, 0, 0].obs;
+  final _updating = false.obs;
+  final _selectedDepartment = 'ALL'.obs;
 
   @override
   void initState() {
     super.initState();
     _vm = Get.find();
-    _updating = true;
+    _updating.value = true;
     _vm.getDepartments().then((value) async {
       await Future.delayed(const Duration(seconds: 3));
       if (!mounted) return;
-      setState(() {
-        _departments.addAll(value);
-      });
+      _departments.assignAll(value);
     });
-    _vm.getOrders().then((value) async {
+    _vm.getOrders('').then((value) async {
       await Future.delayed(const Duration(seconds: 1));
       if (!mounted) return;
-      setState(() {
-        _updateOrdersSelection();
-      });
-      _updating = false;
+      _updateOrdersCount();
+      _updating.value = false;
     });
     Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) return;
-      setState(() {});
+      _updateOrdersCount();
     });
 
     _vm.getOrderStream().listen((value) {
-      _onUpdatePressed();
+      _onUpdatePressed(_selectedDepartment.value);
     });
   }
 
-  void _updateOrdersSelection() {
-    _orders.clear();
-    _count = [0, 0, 0, 0];
+  void _updateOrdersCount() {
+    final currentList = <Order>[];
+    _count.clear();
+    _count.addAll([0, 0, 0, 0]);
     for (var element in _vm.orders) {
-      if (_selection == OrderType.all) {
-        _orders.add(element);
-      } else if (element.orderType == _selection) {
-        _orders.add(element);
+      if (_selection.value == OrderType.all) {
+        currentList.add(element);
+      } else if (element.orderType == _selection.value) {
+        currentList.add(element);
       }
       _count[0]++;
       if (element.orderType == OrderType.dineIn) {
@@ -75,6 +73,17 @@ class _KitchenDisplayPageState extends State<KitchenDisplayPage> {
         _count[3]++;
       }
     }
+
+    final dict1 = _orders.map((e) => e.number).toSet();
+    final dict2 = currentList.map((e) => e.number).toSet();
+
+    final difference1 = dict2.difference(dict1);
+    if (difference1.isNotEmpty) {
+      _vm.playSound();
+    }
+
+    _orders.clear();
+    _orders.addAll(currentList);
   }
 
   @override
@@ -85,56 +94,16 @@ class _KitchenDisplayPageState extends State<KitchenDisplayPage> {
     Get.delete<OrdersRepository>();
   }
 
-  void _onUpdatePressed() {
-    if (!mounted) return;
-    setState(() {
-      _updating = true;
-    });
-    _vm.getOrders().then((value) {
-      setState(() {
-        _updateOrdersSelection();
-        _updating = false;
-      });
-    });
+  Future<void> _onUpdatePressed(String department) async {
+    if (_updating.value) return;
+    _updating.value = true;
+    await _vm.getOrders(department);
+    _updateOrdersCount();
+    _updating.value = false;
   }
 
   @override
   Widget build(BuildContext context) {
-    bool itemExists = false;
-    final listOrders = <Order>[];
-    if (_selectedDepartment != 'ALL') {
-      for (var order in _orders) {
-        for (var item in order.items) {
-          if (item.department == _selectedDepartment) {
-            itemExists = true;
-            break;
-          }
-        }
-        for (var deal in order.deals) {
-          for (var dealItem in deal.dealItems) {
-            if (dealItem.department == _selectedDepartment) {
-              itemExists = true;
-              break;
-            }
-          }
-          if (itemExists) break;
-        }
-        for (var lessItem in order.lessItems) {
-          if (lessItem.department == _selectedDepartment) {
-            itemExists = true;
-            break;
-          }
-        }
-
-        if (itemExists) {
-          listOrders.add(order);
-          itemExists = false;
-        }
-      }
-    } else {
-      listOrders.addAll(_orders);
-    }
-
     return Scaffold(
       backgroundColor: Theme.of(context).primaryColor,
       appBar: AppBar(
@@ -142,67 +111,95 @@ class _KitchenDisplayPageState extends State<KitchenDisplayPage> {
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            DropdownMenu<String>(
-              initialSelection: _selectedDepartment,
-              width: 250,
-              dropdownMenuEntries: _departments
-                  .map(
-                    (e) => DropdownMenuEntry<String>(
-                      value: e.name,
-                      label: e.name,
-                    ),
-                  )
-                  .toList(),
-              onSelected: (value) {
-                setState(() {
-                  _selectedDepartment = value ?? 'ALL';
-                });
-              },
-            ),
-            SingleChoice(
-              count: _count,
-              selected: _selection,
-              onSelectionChanged: (value) {
-                if (!mounted) return;
-                setState(() {
-                  _selection = value;
-                  _updateOrdersSelection();
-                });
-              },
+            Obx(
+              () => SingleChoice(
+                count: _count,
+                selected: _selection.value,
+                onSelectionChanged: (value) {
+                  if (!mounted) return;
+                  _selection.value = value;
+                  _updateOrdersCount();
+                },
+              ),
             ),
           ],
         ),
         actions: [
-          TextButton.icon(
-            onPressed: _onUpdatePressed,
-            icon: const Icon(Icons.refresh),
-            label: Text(_updating ? 'Please Wait' : 'Update'),
+          Obx(
+            () => PopupMenuButton<String>(
+              child: const SizedBox(
+                width: 150,
+                child: ListTile(
+                  title: Text('OPTIONS'),
+                  trailing: Icon(Icons.more_vert),
+                ),
+              ),
+              onSelected: (value) async {
+                switch (value) {
+                  case 'update':
+                    await _onUpdatePressed(_selectedDepartment.value);
+                    return;
+                  case 'departments':
+                    return;
+                  default:
+                    _selectedDepartment.value = value;
+                    await _onUpdatePressed(_selectedDepartment.value);
+                }
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem<String>(
+                  value: 'update',
+                  child: Text(_updating.value ? 'PLEASE WAIT' : 'UPDATE'),
+                ),
+                const PopupMenuDivider(),
+                const PopupMenuItem(
+                    value: 'departments', child: Text('DEPARTMENTS')),
+                const PopupMenuDivider(),
+                ..._departments.map(
+                  (e) => PopupMenuItem<String>(
+                    value: e.name,
+                    child: Text(e.name),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8.0),
-        child: MasonryGridView.count(
-          itemCount: listOrders.length,
-          crossAxisCount: 4,
-          itemBuilder: (context, index) {
-            final order = listOrders[index];
-
-            return SizedBox(
-              width: 300,
-              child: TicketWidget(
-                selectedDepartment: _selectedDepartment,
-                order: order,
-                onDonePressed: (orderNumber) {
-                  _vm.updateOrder(orderNumber, 'done');
-                },
-                onPreparingPressed: (orderNumber) {
-                  _vm.updateOrder(orderNumber, 'preparing');
-                  _vm.stopSound();
-                },
-              ),
-            );
-          },
+        child: Obx(
+          () => MasonryGridView.count(
+            itemCount: _orders.length,
+            crossAxisCount: 4,
+            itemBuilder: (context, index) {
+              final order = _orders[index];
+              Color? alternate;
+              if (order.status == OrderStatus.pending) {
+                final isOdd = DateTime.now().second.isOdd;
+                if (isOdd) {
+                  alternate = Colors.white.withValues(alpha: 0.8);
+                } else {
+                  alternate = null;
+                }
+              }
+              return SizedBox(
+                width: 300,
+                child: TicketWidget(
+                  alternateColor: alternate,
+                  order: order,
+                  onDonePressed: (orderNumber) {
+                    _vm.updateOrder(orderNumber, 'done');
+                    _vm.stopSound();
+                  },
+                  onPreparingPressed: (orderNumber) {
+                    _vm.updateOrder(orderNumber, 'preparing');
+                    _vm.stopSound();
+                  },
+                ),
+              );
+            },
+          ),
         ),
       ),
     );

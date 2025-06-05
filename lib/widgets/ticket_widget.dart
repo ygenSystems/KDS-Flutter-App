@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:kitchen_display_system/models/deal.dart';
-import 'package:kitchen_display_system/models/item.dart';
 import 'package:kitchen_display_system/models/order.dart';
 import 'package:kitchen_display_system/widgets/ticket_details.dart';
 import 'package:kitchen_display_system/widgets/ticket_footer.dart';
@@ -8,16 +6,16 @@ import 'package:kitchen_display_system/widgets/ticket_header.dart';
 import 'package:kitchen_display_system/widgets/ticket_sub_header.dart';
 
 class TicketWidget extends StatelessWidget {
-  final String selectedDepartment;
   final Order order;
   final void Function(String orderNumber) onDonePressed;
   final void Function(String orderNumber) onPreparingPressed;
+  final Color? alternateColor;
   const TicketWidget({
     super.key,
-    required this.selectedDepartment,
     required this.order,
     required this.onDonePressed,
     required this.onPreparingPressed,
+    this.alternateColor,
   });
 
   @override
@@ -25,6 +23,7 @@ class TicketWidget extends StatelessWidget {
     const divider = SizedBox(height: 2.0);
     final primaryColor = Theme.of(context).primaryColor;
     return Card(
+      color: alternateColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10),
         side: BorderSide(
@@ -40,16 +39,14 @@ class TicketWidget extends StatelessWidget {
             TicketSubHeader(order: order),
             Divider(color: primaryColor),
             RegularItemsTicketDetail(
-              deals: _getDealsByDepartment(selectedDepartment, order.deals),
-              items: _getItemsByDepartment(selectedDepartment, order.items),
+              deals: order.deals,
+              items: order.items,
             ),
             if (order.lessItems.isNotEmpty) Divider(color: primaryColor),
             if (order.lessItems.isNotEmpty)
               LessItemTicketDetails(
-                lessItems:
-                    _getItemsByDepartment(selectedDepartment, order.lessItems),
-                lessDeals:
-                    _getDealsByDepartment(selectedDepartment, order.lessDeals),
+                lessItems: order.lessItems,
+                lessDeals: order.lessDeals,
               ),
             Divider(color: primaryColor),
             TicketFooter(
@@ -61,15 +58,5 @@ class TicketWidget extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  List<Item> _getItemsByDepartment(String department, List<Item> items) {
-    if (department == 'ALL') return items;
-    return items.where((item) => item.department == department).toList();
-  }
-
-  List<Deal> _getDealsByDepartment(String department, List<Deal> deals) {
-    if (department == 'ALL') return deals;
-    return deals.where((deal) => deal.department == department).toList();
   }
 }
