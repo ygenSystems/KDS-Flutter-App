@@ -14,25 +14,24 @@ class Deal extends Item {
     required this.dealItems,
   });
   Deal.fromMap(super.map)
-      : dealItems = (map['dealItems'] as List<dynamic>).map((e) => DealItem.fromMap(e)).toList(),
-        super.fromMap();
+    : dealItems =
+          (map['dealItems'] as List<dynamic>)
+              .map((e) => DealItem.fromMap(e))
+              .toList(),
+      super.fromMap();
 }
 
 class DealItem {
   final String name;
-  final int quantity;
+  final double quantity;
   final String? hexColor;
   final String department;
 
-  DealItem.empty()
-      : name = '',
-        quantity = 0,
-        department = '',
-        hexColor = null;
+  DealItem.empty() : name = '', quantity = 0, department = '', hexColor = null;
 
   DealItem.fromMap(Map<String, dynamic> map)
-      : name = map['name'],
-        quantity = map['quantity'],
-        department = map['department'],
-        hexColor = map['hexColor'];
+    : name = map['name'],
+      quantity = double.tryParse(map['quantity'].toString()) ?? 0.00,
+      department = map['department'],
+      hexColor = map['hexColor'];
 }

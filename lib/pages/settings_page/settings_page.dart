@@ -47,12 +47,7 @@ class _SettingsPageState extends State<SettingsPage> {
     final titleLarge = textTheme.titleLarge;
     final bodyLarge = textTheme.bodyLarge;
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'SETTINGS',
-          style: titleLarge,
-        ),
-      ),
+      appBar: AppBar(title: Text('SETTINGS', style: titleLarge)),
       body: Padding(
         padding: const EdgeInsets.all(8.0),
         child: ListView(
@@ -80,7 +75,11 @@ class _SettingsPageState extends State<SettingsPage> {
                 onPressed: () async {
                   if (_isValidIp.value) {
                     await _box.write('server_ip', _controller.text);
-                    Get.snackbar('Setting', 'Server ip address saved');
+                    Get.snackbar(
+                      'Setting',
+                      'Server ip address saved',
+                      snackPosition: SnackPosition.BOTTOM,
+                    );
                   }
                 },
                 icon: const Icon(Icons.check),
@@ -94,31 +93,37 @@ class _SettingsPageState extends State<SettingsPage> {
               inputDecorationTheme: const InputDecorationTheme(
                 border: UnderlineInputBorder(),
               ),
-              initialSelection: (_box
+              initialSelection:
+                  (_box
                       .read<String>('sound')
                       ?.split('/')
                       .last
                       .split('.')
                       .first) ??
                   'new_order1',
-              dropdownMenuEntries: _soundList.entries.map((entry) {
-                return DropdownMenuEntry(
-                  leadingIcon: IconButton(
-                    onPressed: () async {
-                      final sound = 'sounds/${entry.key}.mp3';
-                      await audioPlayer.play(AssetSource(sound));
-                    },
-                    icon: const Icon(Icons.play_arrow),
-                  ),
-                  value: entry.key,
-                  label: entry.value,
-                );
-              }).toList(),
+              dropdownMenuEntries:
+                  _soundList.entries.map((entry) {
+                    return DropdownMenuEntry(
+                      leadingIcon: IconButton(
+                        onPressed: () async {
+                          final sound = 'sounds/${entry.key}.mp3';
+                          await audioPlayer.play(AssetSource(sound));
+                        },
+                        icon: const Icon(Icons.play_arrow),
+                      ),
+                      value: entry.key,
+                      label: entry.value,
+                    );
+                  }).toList(),
               onSelected: (value) async {
                 if (value == null) return;
                 final sound = 'sounds/$value.mp3';
                 await _box.write('sound', sound);
-                Get.snackbar('Setting', 'Sound saved');
+                Get.snackbar(
+                  'Setting',
+                  'Sound saved',
+                  snackPosition: SnackPosition.BOTTOM,
+                );
               },
             ),
             Obx(
@@ -154,13 +159,8 @@ class SettingsTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final bodyLarge = Theme.of(context).textTheme.bodyLarge;
     return ListTile(
-      title: TextField(
-        controller: controller,
-      ),
-      subtitle: Text(
-        label,
-        style: bodyLarge,
-      ),
+      title: TextField(controller: controller),
+      subtitle: Text(label, style: bodyLarge),
       leading: IconButton(
         onPressed: onDonePressed,
         icon: const Icon(Icons.check),

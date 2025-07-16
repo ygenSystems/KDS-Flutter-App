@@ -125,44 +125,45 @@ class _KitchenDisplayPageState extends State<KitchenDisplayPage> {
           ],
         ),
         actions: [
-          Obx(
-            () => PopupMenuButton<String>(
-              child: const SizedBox(
-                width: 150,
-                child: ListTile(
-                  title: Text('OPTIONS'),
-                  trailing: Icon(Icons.more_vert),
-                ),
+          PopupMenuButton<String>(
+            child: const SizedBox(
+              width: 150,
+              child: ListTile(
+                title: Text('OPTIONS'),
+                trailing: Icon(Icons.more_vert),
               ),
-              onSelected: (value) async {
-                switch (value) {
-                  case 'update':
-                    await _onUpdatePressed(_selectedDepartment.value);
-                    return;
-                  case 'departments':
-                    return;
-                  default:
-                    _selectedDepartment.value = value;
-                    await _onUpdatePressed(_selectedDepartment.value);
-                }
-              },
-              itemBuilder: (context) => [
-                PopupMenuItem<String>(
-                  value: 'update',
-                  child: Text(_updating.value ? 'PLEASE WAIT' : 'UPDATE'),
-                ),
-                const PopupMenuDivider(),
-                const PopupMenuItem(
-                    value: 'departments', child: Text('DEPARTMENTS')),
-                const PopupMenuDivider(),
-                ..._departments.map(
-                  (e) => PopupMenuItem<String>(
-                    value: e.name,
-                    child: Text(e.name),
-                  ),
-                ),
-              ],
             ),
+            onSelected: (value) async {
+              switch (value) {
+                case 'update':
+                  await _onUpdatePressed(_selectedDepartment.value);
+                  return;
+                case 'departments':
+                  return;
+                default:
+                  _selectedDepartment.value = value;
+                  await _onUpdatePressed(_selectedDepartment.value);
+              }
+            },
+            itemBuilder:
+                (context) => [
+                  PopupMenuItem<String>(
+                    value: 'update',
+                    child: Text(_updating.value ? 'PLEASE WAIT' : 'UPDATE'),
+                  ),
+                  const PopupMenuDivider(),
+                  const PopupMenuItem(
+                    value: 'departments',
+                    child: Text('DEPARTMENTS'),
+                  ),
+                  const PopupMenuDivider(),
+                  ..._departments.map(
+                    (e) => PopupMenuItem<String>(
+                      value: e.name,
+                      child: Text(e.name),
+                    ),
+                  ),
+                ],
           ),
         ],
       ),
@@ -245,8 +246,9 @@ class SingleChoice extends StatelessWidget {
         ),
       ],
       selected: <OrderType>{selected},
-      onSelectionChanged: (Set<OrderType> newSelection) =>
-          onSelectionChanged(newSelection.first),
+      onSelectionChanged:
+          (Set<OrderType> newSelection) =>
+              onSelectionChanged(newSelection.first),
     );
   }
 }

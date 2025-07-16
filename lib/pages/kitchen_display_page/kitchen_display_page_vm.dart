@@ -29,7 +29,8 @@ class KitchenDisplayController {
     if (_audioPlayer.state == PlayerState.playing) {
       await _audioPlayer.stop();
     }
-    final sound = GetStorage().read<String?>('sound') ?? 'new_order1.mp3';
+    final sound =
+        GetStorage().read<String?>('sound') ?? 'sounds/new_order1.mp3';
     final repeat = GetStorage().read<bool>('repeat_sound') ?? false;
     if (repeat) {
       await _audioPlayer.setReleaseMode(ReleaseMode.loop);
