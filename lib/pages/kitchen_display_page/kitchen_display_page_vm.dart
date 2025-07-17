@@ -18,7 +18,7 @@ class KitchenDisplayController {
 
   Future<List<Order>> getOrders(String department) async {
     try {
-      orders = await _repo.getKDSOrders(department);
+      orders = await _repo.getKDSOrders(department == 'ALL' ? '' : department);
       return orders;
     } catch (e) {
       return orders;
@@ -40,8 +40,17 @@ class KitchenDisplayController {
     await _audioPlayer.play(AssetSource(sound));
   }
 
+  bool blinkOnNewOrder() {
+    return GetStorage().read<bool>('blink_new_order') ?? false;
+  }
+
+  bool stopSoundOnPendingPressed() {
+    return GetStorage().read<bool>('stop_sound_on_pending_pressed') ?? false;
+  }
+
   Future<void> stopSound() async {
-    if (_audioPlayer.state == PlayerState.playing) {
+    if (stopSoundOnPendingPressed() &&
+        _audioPlayer.state == PlayerState.playing) {
       await _audioPlayer.stop();
     }
   }
@@ -58,7 +67,7 @@ class KitchenDisplayController {
     _repo.updateOrderWSocket(orderNumber, status);
   }
 
-  Stream<bool> getOrderStream() async* {
+  Stream<bool> updateListener() async* {
     await for (var event in _repo.setupKDSSocket()) {
       if (event) {
         yield event;
@@ -69,5 +78,9 @@ class KitchenDisplayController {
   Future<void> dispose() async {
     await _audioPlayer.dispose();
     _repo.dispose();
+  }
+
+  bool delayOnDonePressed() {
+    return GetStorage().read<bool>('delay_on_done_pressed') ?? false;
   }
 }

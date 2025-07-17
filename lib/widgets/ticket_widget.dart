@@ -10,12 +10,14 @@ class TicketWidget extends StatelessWidget {
   final void Function(String orderNumber) onDonePressed;
   final void Function(String orderNumber) onPreparingPressed;
   final Color? alternateColor;
+  final Color? baseColor;
   const TicketWidget({
     super.key,
     required this.order,
     required this.onDonePressed,
     required this.onPreparingPressed,
     this.alternateColor,
+    this.baseColor,
   });
 
   @override
@@ -27,7 +29,8 @@ class TicketWidget extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10),
         side: BorderSide(
-          color: Theme.of(context).primaryColor,
+          color: baseColor ?? primaryColor,
+          width: baseColor == null ? 1.0 : 4.0,
         ),
       ),
       child: Padding(
@@ -38,10 +41,7 @@ class TicketWidget extends StatelessWidget {
             divider,
             TicketSubHeader(order: order),
             Divider(color: primaryColor),
-            RegularItemsTicketDetail(
-              deals: order.deals,
-              items: order.items,
-            ),
+            RegularItemsTicketDetail(deals: order.deals, items: order.items),
             if (order.lessItems.isNotEmpty) Divider(color: primaryColor),
             if (order.lessItems.isNotEmpty)
               LessItemTicketDetails(

@@ -14,7 +14,10 @@ class _SettingsPageState extends State<SettingsPage> {
   final _isValidIp = true.obs;
   final _box = GetStorage();
   final _controller = TextEditingController();
-  final _switchValue = false.obs;
+  final _repeatSoundValue = false.obs;
+  final _blinkNewOrder = false.obs;
+  final _stopSoundOnPendingPressed = false.obs;
+  final _delayOnDonePressed = false.obs;
   final audioPlayer = AudioPlayer();
   final _soundList = <String, String>{
     'new_order1': 'New Order 1',
@@ -32,6 +35,11 @@ class _SettingsPageState extends State<SettingsPage> {
     if (serverIp != null) {
       _controller.text = serverIp;
     }
+    _repeatSoundValue.value = _box.read('repeat_sound') ?? false;
+    _blinkNewOrder.value = _box.read('blink_new_order') ?? false;
+    _stopSoundOnPendingPressed.value =
+        _box.read('stop_sound_on_pending_pressed') ?? false;
+    _delayOnDonePressed.value = _box.read('delay_on_done_pressed') ?? false;
   }
 
   @override
@@ -39,6 +47,10 @@ class _SettingsPageState extends State<SettingsPage> {
     audioPlayer.dispose();
     _controller.dispose();
     super.dispose();
+  }
+
+  void _showSnackbar(String message) {
+    Get.snackbar('Setting', message, snackPosition: SnackPosition.BOTTOM);
   }
 
   @override
@@ -75,11 +87,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 onPressed: () async {
                   if (_isValidIp.value) {
                     await _box.write('server_ip', _controller.text);
-                    Get.snackbar(
-                      'Setting',
-                      'Server ip address saved',
-                      snackPosition: SnackPosition.BOTTOM,
-                    );
+                    _showSnackbar('Server ip address saved');
                   }
                 },
                 icon: const Icon(Icons.check),
@@ -119,21 +127,53 @@ class _SettingsPageState extends State<SettingsPage> {
                 if (value == null) return;
                 final sound = 'sounds/$value.mp3';
                 await _box.write('sound', sound);
-                Get.snackbar(
-                  'Setting',
-                  'Sound saved',
-                  snackPosition: SnackPosition.BOTTOM,
-                );
+                _showSnackbar('Sound saved');
               },
             ),
             Obx(
               () => SwitchListTile(
                 title: const Text('Repeat Sound'),
                 subtitle: const Text('Repeat sound when new order comes'),
-                value: _switchValue.value,
+                value: _repeatSoundValue.value,
                 onChanged: (value) async {
-                  _switchValue.value = value;
+                  _repeatSoundValue.value = value;
                   await _box.write('repeat_sound', value);
+                },
+              ),
+            ),
+            Obx(
+              () => SwitchListTile(
+                title: const Text('Blink New Order'),
+                subtitle: const Text('Enable blink effect for new orders'),
+                value: _blinkNewOrder.value,
+                onChanged: (value) async {
+                  _blinkNewOrder.value = value;
+                  await _box.write('blink_new_order', value);
+                },
+              ),
+            ),
+            Obx(
+              () => SwitchListTile(
+                title: const Text('Stop Sound on Pending Pressed'),
+                subtitle: const Text(
+                  'Stop sound when pending button is pressed',
+                ),
+                value: _stopSoundOnPendingPressed.value,
+                onChanged: (value) async {
+                  _stopSoundOnPendingPressed.value = value;
+                  await _box.write('stop_sound_on_pending_pressed', value);
+                },
+              ),
+            ),
+            Obx(
+              () => SwitchListTile(
+                title: const Text('Delay on Done Pressed'),
+                subtitle: const Text('Delay before marking order as done'),
+                value: _delayOnDonePressed.value,
+                onChanged: (value) async {
+                  _delayOnDonePressed.value = value;
+                  await _box.write('delay_on_done_pressed', value);
+                  _showSnackbar('Delay on done pressed saved');
                 },
               ),
             ),

@@ -49,30 +49,31 @@ class _KitchenDisplayPageState extends State<KitchenDisplayPage> {
       _updateOrdersCount();
     });
 
-    _vm.getOrderStream().listen((value) {
+    _vm.updateListener().listen((value) {
       _onUpdatePressed(_selectedDepartment.value);
     });
   }
 
   void _updateOrdersCount() {
     final currentList = <Order>[];
-    _count.clear();
-    _count.addAll([0, 0, 0, 0]);
+    final count = <int>[];
+    count.addAll([0, 0, 0, 0]);
     for (var element in _vm.orders) {
       if (_selection.value == OrderType.all) {
         currentList.add(element);
       } else if (element.orderType == _selection.value) {
         currentList.add(element);
       }
-      _count[0]++;
+      count[0]++;
       if (element.orderType == OrderType.dineIn) {
-        _count[1]++;
+        count[1]++;
       } else if (element.orderType == OrderType.takeAway) {
-        _count[2]++;
+        count[2]++;
       } else if (element.orderType == OrderType.delivery) {
-        _count[3]++;
+        count[3]++;
       }
     }
+    _count.assignAll(count);
 
     final dict1 = _orders.map((e) => e.number).toSet();
     final dict2 = currentList.map((e) => e.number).toSet();
@@ -102,27 +103,44 @@ class _KitchenDisplayPageState extends State<KitchenDisplayPage> {
     _updating.value = false;
   }
 
+  Color? _blinkOnNewOrder(OrderStatus orderStatus) {
+    if (!_vm.blinkOnNewOrder()) return null;
+    if (orderStatus == OrderStatus.pending) {
+      final isOdd = DateTime.now().second.isOdd;
+      if (isOdd) {
+        return Colors.white.withValues(alpha: 0.8);
+      }
+    }
+    return null;
+  }
+
+  Color? _checkOrderOverTime(DateTime orderTime) {
+    final now = DateTime.now();
+    final difference = now.difference(orderTime).inMinutes;
+    if (difference >= 20) {
+      return Colors.red.withValues(alpha: 0.8);
+    } else if (difference >= 15) {
+      return Colors.yellow.withValues(alpha: 0.8);
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).primaryColor,
       appBar: AppBar(
         centerTitle: true,
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            Obx(
-              () => SingleChoice(
-                count: _count,
-                selected: _selection.value,
-                onSelectionChanged: (value) {
-                  if (!mounted) return;
-                  _selection.value = value;
-                  _updateOrdersCount();
-                },
-              ),
-            ),
-          ],
+        title: Obx(
+          () => SingleChoice(
+            count: _count,
+            selected: _selection.value,
+            onSelectionChanged: (value) {
+              if (!mounted) return;
+              _selection.value = value;
+              _updateOrdersCount();
+            },
+          ),
         ),
         actions: [
           PopupMenuButton<String>(
@@ -175,18 +193,12 @@ class _KitchenDisplayPageState extends State<KitchenDisplayPage> {
             crossAxisCount: 4,
             itemBuilder: (context, index) {
               final order = _orders[index];
-              Color? alternate;
-              if (order.status == OrderStatus.pending) {
-                final isOdd = DateTime.now().second.isOdd;
-                if (isOdd) {
-                  alternate = Colors.white.withValues(alpha: 0.8);
-                } else {
-                  alternate = null;
-                }
-              }
+              Color? baseColor = _checkOrderOverTime(order.orderTime);
+              Color? alternate = _blinkOnNewOrder(order.status);
               return SizedBox(
                 width: 300,
                 child: TicketWidget(
+                  baseColor: baseColor,
                   alternateColor: alternate,
                   order: order,
                   onDonePressed: (orderNumber) {
@@ -226,22 +238,22 @@ class SingleChoice extends StatelessWidget {
       segments: <ButtonSegment<OrderType>>[
         ButtonSegment<OrderType>(
           value: OrderType.all,
-          label: Text('All (${count[0]})', style: style),
+          label: Obx(() => Text('All (${count[0]})', style: style)),
           icon: Icon(Icons.all_inclusive, color: primaryColor),
         ),
         ButtonSegment<OrderType>(
           value: OrderType.dineIn,
-          label: Text('Dine In (${count[1]})', style: style),
+          label: Obx(() => Text('Dine In (${count[1]})', style: style)),
           icon: Icon(Icons.table_restaurant, color: primaryColor),
         ),
         ButtonSegment<OrderType>(
           value: OrderType.takeAway,
-          label: Text('Takeaway (${count[2]})', style: style),
+          label: Obx(() => Text('Takeaway (${count[2]})', style: style)),
           icon: Icon(Icons.directions_walk, color: primaryColor),
         ),
         ButtonSegment<OrderType>(
           value: OrderType.delivery,
-          label: Text('Delivery (${count[3]})', style: style),
+          label: Obx(() => Text('Delivery (${count[3]})', style: style)),
           icon: Icon(Icons.pedal_bike, color: primaryColor),
         ),
       ],

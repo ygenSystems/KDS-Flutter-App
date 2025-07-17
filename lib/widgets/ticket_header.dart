@@ -18,7 +18,7 @@ class TicketHeader extends StatelessWidget {
           '${order.orderType.name.toUpperCase()} (${order.duration.inMinutes % 60}:${order.duration.inSeconds % 60})',
           style: textStyle,
         ),
-        Text(order.number, style: textStyle),
+        Text(order.number, style: textStyle.copyWith(fontSize: 20)),
       ],
     );
   }
