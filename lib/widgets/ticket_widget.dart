@@ -28,34 +28,56 @@ class TicketWidget extends StatelessWidget {
       color: alternateColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10),
-        side: BorderSide(
-          color: baseColor ?? primaryColor,
-          width: baseColor == null ? 1.0 : 4.0,
-        ),
+        side: BorderSide(color: primaryColor),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Column(
-          children: [
-            TicketHeader(order: order),
-            divider,
-            TicketSubHeader(order: order),
-            Divider(color: primaryColor),
-            RegularItemsTicketDetail(deals: order.deals, items: order.items),
-            if (order.lessItems.isNotEmpty) Divider(color: primaryColor),
-            if (order.lessItems.isNotEmpty)
-              LessItemTicketDetails(
-                lessItems: order.lessItems,
-                lessDeals: order.lessDeals,
-              ),
-            Divider(color: primaryColor),
-            TicketFooter(
-              order: order,
-              onDonePressed: onDonePressed,
-              onPreparingPressed: onPreparingPressed,
+      child: Column(
+        children: [
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+            child: Builder(
+              builder: (context) {
+                var child = Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Column(
+                    children: [
+                      TicketHeader(order: order),
+                      divider,
+                      TicketSubHeader(order: order),
+                    ],
+                  ),
+                );
+                if (baseColor == null) {
+                  return child;
+                }
+                return ColoredBox(color: baseColor!, child: child);
+              },
             ),
-          ],
-        ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              children: [
+                Divider(color: primaryColor),
+                RegularItemsTicketDetail(
+                  deals: order.deals,
+                  items: order.items,
+                ),
+                if (order.lessItems.isNotEmpty) Divider(color: primaryColor),
+                if (order.lessItems.isNotEmpty)
+                  LessItemTicketDetails(
+                    lessItems: order.lessItems,
+                    lessDeals: order.lessDeals,
+                  ),
+                Divider(color: primaryColor),
+                TicketFooter(
+                  order: order,
+                  onDonePressed: onDonePressed,
+                  onPreparingPressed: onPreparingPressed,
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -7,10 +7,18 @@ class TicketHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textStyle = TextStyle(
+    TextStyle textStyle = TextStyle(
       fontWeight: FontWeight.bold,
       color: Theme.of(context).primaryColor,
     );
+    final now = DateTime.now();
+    final difference = now.difference(order.orderTime).inMinutes;
+    if (difference >= 15) {
+      textStyle = textStyle.copyWith(color: Colors.black);
+    } else if (difference >= 20) {
+      textStyle = textStyle.copyWith(color: Colors.white);
+    }
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [

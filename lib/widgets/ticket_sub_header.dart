@@ -9,7 +9,14 @@ class TicketSubHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primaryColor = Theme.of(context).primaryColor;
+    TextStyle textStyle = TextStyle(color: Theme.of(context).primaryColor);
+    final now = DateTime.now();
+    final difference = now.difference(order.orderTime).inMinutes;
+    if (difference >= 15) {
+      textStyle = textStyle.copyWith(color: Colors.black);
+    } else if (difference >= 20) {
+      textStyle = textStyle.copyWith(color: Colors.white);
+    }
     return Column(
       children: [
         Row(
@@ -20,7 +27,7 @@ class TicketSubHeader extends StatelessWidget {
                 maxWidth: 50,
                 child: Text(
                   'Tbl: ${order.tableNumber}'.toUpperCase(),
-                  style: TextStyle(color: primaryColor),
+                  style: textStyle,
                 ),
               )
             else
@@ -29,8 +36,7 @@ class TicketSubHeader extends StatelessWidget {
               maxWidth: 150,
               child: Text(
                 'Wtr: ${order.waiter}'.toUpperCase(),
-                style: TextStyle(
-                    color: primaryColor, overflow: TextOverflow.ellipsis),
+                style: textStyle.copyWith(overflow: TextOverflow.ellipsis),
               ),
             ),
           ],
@@ -41,7 +47,7 @@ class TicketSubHeader extends StatelessWidget {
             Text(
               'Time: ${DateFormat('hh:mm a').format(order.orderTime)}'
                   .toUpperCase(),
-              style: TextStyle(color: primaryColor),
+              style: textStyle,
             ),
             const Text(''),
           ],
