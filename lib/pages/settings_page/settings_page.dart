@@ -17,7 +17,6 @@ class _SettingsPageState extends State<SettingsPage> {
   final _repeatSoundValue = false.obs;
   final _blinkNewOrder = false.obs;
   final _stopSoundOnPendingPressed = false.obs;
-  final _delayOnDonePressed = false.obs;
   final audioPlayer = AudioPlayer();
   final _soundList = <String, String>{
     'new_order1': 'New Order 1',
@@ -39,7 +38,6 @@ class _SettingsPageState extends State<SettingsPage> {
     _blinkNewOrder.value = _box.read('blink_new_order') ?? false;
     _stopSoundOnPendingPressed.value =
         _box.read('stop_sound_on_pending_pressed') ?? false;
-    _delayOnDonePressed.value = _box.read('delay_on_done_pressed') ?? false;
   }
 
   @override
@@ -162,18 +160,6 @@ class _SettingsPageState extends State<SettingsPage> {
                 onChanged: (value) async {
                   _stopSoundOnPendingPressed.value = value;
                   await _box.write('stop_sound_on_pending_pressed', value);
-                },
-              ),
-            ),
-            Obx(
-              () => SwitchListTile(
-                title: const Text('Delay on Done Pressed'),
-                subtitle: const Text('Delay before marking order as done'),
-                value: _delayOnDonePressed.value,
-                onChanged: (value) async {
-                  _delayOnDonePressed.value = value;
-                  await _box.write('delay_on_done_pressed', value);
-                  _showSnackbar('Delay on done pressed saved');
                 },
               ),
             ),

@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:get/get.dart';
 import 'package:kitchen_display_system/models/department.dart';
 import 'package:kitchen_display_system/models/order.dart';
@@ -27,6 +26,10 @@ class _KitchenDisplayPageState extends State<KitchenDisplayPage> {
   final _count = [0, 0, 0, 0].obs;
   final _updating = false.obs;
   final _selectedDepartment = 'ALL'.obs;
+  final _gridOrders = <Order>[].obs;
+  final _pageController = PageController();
+  final _gridController = ScrollController();
+  final _listController = ScrollController();
 
   @override
   void initState() {
@@ -44,10 +47,10 @@ class _KitchenDisplayPageState extends State<KitchenDisplayPage> {
       _updateOrdersCount();
       _updating.value = false;
     });
-    Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) return;
-      _updateOrdersCount();
-    });
+    // Timer.periodic(const Duration(seconds: 1), (timer) {
+    //   if (!mounted) return;
+    //   _updateOrdersCount();
+    // });
 
     _vm.updateListener().listen((value) {
       _onUpdatePressed(_selectedDepartment.value);
@@ -73,6 +76,10 @@ class _KitchenDisplayPageState extends State<KitchenDisplayPage> {
         count[3]++;
       }
     }
+
+    _gridOrders.assignAll(
+      currentList.length > 4 ? currentList.take(4).toList() : currentList,
+    );
     _count.assignAll(count);
 
     final dict1 = _orders.map((e) => e.number).toSet();
@@ -93,6 +100,9 @@ class _KitchenDisplayPageState extends State<KitchenDisplayPage> {
     _vm.dispose();
     Get.delete<KitchenDisplayController>();
     Get.delete<OrdersRepository>();
+    _pageController.dispose();
+    _gridController.dispose();
+    _listController.dispose();
   }
 
   Future<void> _onUpdatePressed(String department) async {
@@ -186,33 +196,124 @@ class _KitchenDisplayPageState extends State<KitchenDisplayPage> {
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8.0),
-        child: Obx(
-          () => MasonryGridView.count(
-            itemCount: _orders.length,
-            crossAxisCount: 4,
-            itemBuilder: (context, index) {
-              final order = _orders[index];
-              Color? baseColor = _checkOrderOverTime(order.orderTime);
-              Color? alternate = _blinkOnNewOrder(order.status);
-              return SizedBox(
-                width: 300,
-                child: TicketWidget(
-                  baseColor: baseColor,
-                  alternateColor: alternate,
-                  order: order,
-                  onDonePressed: (orderNumber) {
-                    _vm.updateOrder(orderNumber, 'done');
-                    _vm.stopSound();
-                  },
-                  onPreparingPressed: (orderNumber) {
-                    _vm.updateOrder(orderNumber, 'preparing');
-                    _vm.stopSound();
+        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+        child: Column(
+          children: [
+            Expanded(
+              flex: 5,
+              child: Placeholder(
+                child: Obx(
+                  () => PageView.builder(
+                    scrollDirection: Axis.horizontal,
+                    controller: _pageController,
+                    itemCount: _orders.length,
+                    onPageChanged: (value) {
+                      print('Page changed to: $value');
+                      var orders = _orders.skip(value * 4).take(4).toList();
+                      _gridOrders.assignAll(orders);
+                    },
+                    itemBuilder: (context, pageIndex) {
+                      return Obx(
+                        () => GridView.builder(
+                          controller: _gridController,
+                          itemCount: _gridOrders.length,
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 4,
+                                childAspectRatio: 1.0,
+                                crossAxisSpacing: 8.0,
+                                mainAxisSpacing: 8.0,
+                              ),
+                          itemBuilder: (context, index) {
+                            final order = _orders[index];
+                            Color? baseColor = _checkOrderOverTime(
+                              order.orderTime,
+                            );
+                            Color? alternate = _blinkOnNewOrder(order.status);
+                            return TicketWidget(
+                              baseColor: baseColor,
+                              alternateColor: alternate,
+                              order: order,
+                              onDonePressed: () {
+                                _vm.updateOrder(order.number, 'done');
+                                _vm.stopSound();
+                              },
+                              onPreparingPressed: () {
+                                _vm.updateOrder(order.number, 'preparing');
+                                _vm.stopSound();
+                              },
+                            );
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(
+              width: double.maxFinite,
+              height: 100,
+              child: Obx(
+                () => ListView.builder(
+                  controller: _listController,
+                  itemCount: _orders.length,
+                  scrollDirection: Axis.horizontal,
+
+                  itemBuilder: (context, index) {
+                    final order = _orders[index];
+                    Color? baseColor = _checkOrderOverTime(order.orderTime);
+                    Color? alternate = _blinkOnNewOrder(order.status);
+
+                    String timeSince = '';
+                    final now = DateTime.now();
+                    final difference = now.difference(order.orderTime);
+                    if (difference.inMinutes > 0) {
+                      timeSince = '${difference.inMinutes} min ';
+                    } else if (difference.inSeconds > 0) {
+                      timeSince = '${difference.inSeconds} sec ';
+                    } else {
+                      timeSince = 'Just now';
+                    }
+
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: SizedBox(
+                        width: 100,
+                        height: 100,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(2.0),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                order.number,
+                                style: TextStyle(
+                                  color: baseColor ?? Colors.white,
+                                  fontSize: 20,
+                                ),
+                              ),
+                              const Divider(),
+                              Text(
+                                timeSince,
+                                style: TextStyle(
+                                  color: baseColor ?? Colors.white,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
                   },
                 ),
-              );
-            },
-          ),
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -1,13 +1,11 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:kitchen_display_system/models/order.dart';
 import 'package:kitchen_display_system/models/order_status.dart';
 
-class TicketFooter extends StatefulWidget {
+class TicketFooter extends StatelessWidget {
   final Order order;
-  final void Function(String orderNumber) onDonePressed;
-  final void Function(String orderNumber) onPreparingPressed;
+  final void Function() onDonePressed;
+  final void Function() onPreparingPressed;
   const TicketFooter({
     super.key,
     required this.order,
@@ -16,23 +14,19 @@ class TicketFooter extends StatefulWidget {
   });
 
   @override
-  State<TicketFooter> createState() => _TicketFooterState();
-}
-
-class _TicketFooterState extends State<TicketFooter> {
-  @override
   Widget build(BuildContext context) {
-    final OrderStatus status = widget.order.status;
+    final OrderStatus status = order.status;
     return Row(
       children: [
         Expanded(
           child: InkWell(
-            onTap: _onPreparingPressed,
+            onTap: onPreparingPressed,
             child: DecoratedBox(
               decoration: BoxDecoration(
-                color: status == OrderStatus.preparing
-                    ? Theme.of(context).primaryColor.withValues(alpha: 0.3)
-                    : null,
+                color:
+                    status == OrderStatus.preparing
+                        ? Theme.of(context).primaryColor.withValues(alpha: 0.3)
+                        : null,
                 border: Border.all(color: Theme.of(context).primaryColor),
                 borderRadius: BorderRadius.circular(10),
               ),
@@ -42,9 +36,10 @@ class _TicketFooterState extends State<TicketFooter> {
                   child: Text(
                     'PREPARING',
                     style: TextStyle(
-                        color: Theme.of(context).primaryColor,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12),
+                      color: Theme.of(context).primaryColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
               ),
@@ -54,7 +49,7 @@ class _TicketFooterState extends State<TicketFooter> {
         const SizedBox(width: 8.0),
         Expanded(
           child: InkWell(
-            onTap: _onDonePressed,
+            onTap: onDonePressed,
             child: DecoratedBox(
               decoration: BoxDecoration(
                 border: Border.all(color: Theme.of(context).primaryColor),
@@ -64,11 +59,12 @@ class _TicketFooterState extends State<TicketFooter> {
                 padding: const EdgeInsets.all(8.0),
                 child: Center(
                   child: Text(
-                    _count == 5 ? 'DONE' : 'DONE(${_count + 1})',
+                    'DONE',
                     style: TextStyle(
-                        color: Theme.of(context).primaryColor,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12),
+                      color: Theme.of(context).primaryColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
               ),
@@ -77,39 +73,5 @@ class _TicketFooterState extends State<TicketFooter> {
         ),
       ],
     );
-  }
-
-  Timer? _timer;
-  int _count = 5;
-
-  void _onDonePressed() {
-    if (_timer != null) {
-      setState(() {
-        _timer?.cancel();
-        _timer = null;
-        _count = 5;
-      });
-    } else {
-      _timer = Timer.periodic(const Duration(seconds: 1), _timerCallback);
-    }
-  }
-
-  void _timerCallback(timer) {
-    if (!mounted) return;
-    setState(() {
-      if (_count > 0) {
-        _count--;
-      } else {
-        widget.onDonePressed(widget.order.id);
-        _timer?.cancel();
-        _count = 5;
-      }
-    });
-  }
-
-  void _onPreparingPressed() {
-    _timer?.cancel();
-    _count = 5;
-    widget.onPreparingPressed(widget.order.id);
   }
 }

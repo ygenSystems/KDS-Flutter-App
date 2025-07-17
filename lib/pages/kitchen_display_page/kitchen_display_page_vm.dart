@@ -79,8 +79,4 @@ class KitchenDisplayController {
     await _audioPlayer.dispose();
     _repo.dispose();
   }
-
-  bool delayOnDonePressed() {
-    return GetStorage().read<bool>('delay_on_done_pressed') ?? false;
-  }
 }

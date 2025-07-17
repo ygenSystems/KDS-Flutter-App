@@ -7,10 +7,11 @@ import 'package:kitchen_display_system/widgets/ticket_sub_header.dart';
 
 class TicketWidget extends StatelessWidget {
   final Order order;
-  final void Function(String orderNumber) onDonePressed;
-  final void Function(String orderNumber) onPreparingPressed;
+  final void Function() onDonePressed;
+  final void Function() onPreparingPressed;
   final Color? alternateColor;
   final Color? baseColor;
+
   const TicketWidget({
     super.key,
     required this.order,
@@ -19,7 +20,6 @@ class TicketWidget extends StatelessWidget {
     this.alternateColor,
     this.baseColor,
   });
-
   @override
   Widget build(BuildContext context) {
     const divider = SizedBox(height: 2.0);
@@ -49,6 +49,7 @@ class TicketWidget extends StatelessWidget {
                 lessDeals: order.lessDeals,
               ),
             Divider(color: primaryColor),
+            const Spacer(),
             TicketFooter(
               order: order,
               onDonePressed: onDonePressed,
