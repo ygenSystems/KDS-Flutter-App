@@ -22,9 +22,9 @@ class _CollectionDisplayPageState extends State<CollectionDisplayPage> {
   @override
   void initState() {
     super.initState();
-    _vm = Get.find();
+    _vm = Get.find<CollectionDisplayPageVM>();
     Future.delayed(const Duration(seconds: 1)).then((value) {
-      _onUpdatePressed();
+      if (mounted) setState(() {});
     });
 
     _vm.getOrdersStream((order) {

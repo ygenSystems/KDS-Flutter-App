@@ -10,12 +10,8 @@ class CollectionDisplayPageVM {
 
   List<Order> orders = [];
 
-  Future<List<Order>> getOrders() async {
-    try {
-      return orders = await _repo.getCDSOrders();
-    } catch (e) {
-      return orders;
-    }
+  Future<void> getOrders() async {
+    await _repo.getCDSOrders();
   }
 
   void getOrdersStream(void Function(Order order) onData) {

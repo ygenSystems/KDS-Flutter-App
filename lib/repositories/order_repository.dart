@@ -68,18 +68,8 @@ class OrdersRepository {
     await _hubConnection.send('GetKDSOrders', args: [department]);
   }
 
-  Future<List<Order>> getCDSOrders() async {
-    final response = await _dio.get('/CDSOrders');
-    if (response.statusCode != 200) {
-      throw Exception('Failed to load orders');
-    }
-    final List<dynamic> list = response.data;
-    if (list.isEmpty) {
-      return [];
-    }
-    return list.map((e) {
-      return Order.fromMap(map: e);
-    }).toList();
+  Future<void> getCDSOrders() async {
+    await _hubConnection.send('GetCDSOrders');
   }
 
   Future<bool> updateOrder(String orderId, String status) async {
