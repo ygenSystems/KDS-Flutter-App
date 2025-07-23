@@ -4,6 +4,7 @@ import 'package:kitchen_display_system/models/department.dart';
 import 'package:kitchen_display_system/models/order.dart';
 import 'package:kitchen_display_system/repositories/order_repository.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:signalr_netcore/hub_connection.dart';
 
 class KitchenDisplayController {
   late final OrdersRepository _repo;
@@ -16,12 +17,11 @@ class KitchenDisplayController {
   List<Order> orders = [];
   List<Department> departments = [];
 
-  Future<List<Order>> getOrders(String department) async {
+  Future<void> getOrders(String department) async {
     try {
-      orders = await _repo.getKDSOrders(department == 'ALL' ? '' : department);
-      return orders;
+      await _repo.getKDSOrders(department == 'ALL' ? '' : department);
     } catch (e) {
-      return orders;
+      return;
     }
   }
 
@@ -63,16 +63,12 @@ class KitchenDisplayController {
     }
   }
 
-  void updateOrder(String orderNumber, String status) {
-    _repo.updateOrderWSocket(orderNumber, status);
+  Future<bool> updateOrder(String orderNumber, String status) async {
+    return await _repo.updateOrder(orderNumber, status);
   }
 
-  Stream<bool> updateListener() async* {
-    await for (var event in _repo.setupKDSSocket()) {
-      if (event) {
-        yield event;
-      }
-    }
+  void updateListener(void Function(Order) onNewOrder) {
+    _repo.setKDSOrderOnReceive(onNewOrder);
   }
 
   Future<void> dispose() async {
@@ -82,5 +78,12 @@ class KitchenDisplayController {
 
   bool delayOnDonePressed() {
     return GetStorage().read<bool>('delay_on_done_pressed') ?? false;
+  }
+
+  Future<void> setupSignalR(
+    ReconnectedCallback onReconnected,
+    ReconnectingCallback onReconnecting,
+  ) async {
+    await _repo.setupSignalR(onReconnected, onReconnecting);
   }
 }

@@ -18,10 +18,8 @@ class CollectionDisplayPageVM {
     }
   }
 
-  Stream<bool> getOrdersStream() async* {
-    await for (var event in _repo.setupCDSSocket()) {
-      if (event) yield true;
-    }
+  void getOrdersStream(void Function(Order order) onData) {
+    _repo.setCDSOrderOnReceive(onData);
   }
 
   void dispose() {

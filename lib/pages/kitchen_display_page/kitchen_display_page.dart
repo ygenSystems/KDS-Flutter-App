@@ -25,82 +25,70 @@ class _KitchenDisplayPageState extends State<KitchenDisplayPage> {
   final _orders = <Order>[].obs;
   final _departments = <Department>[].obs;
   final _count = [0, 0, 0, 0].obs;
-  final _updating = false.obs;
   final _selectedDepartment = 'ALL'.obs;
+  late final Timer _timer;
+  final _reconnecting = false.obs;
 
   @override
   void initState() {
     super.initState();
     _vm = Get.find();
-    _updating.value = true;
+    _vm.setupSignalR(_onReconnected, _onReconnecting).then((_) {
+      _vm.updateListener(_onOrderUpdate);
+      _vm.getOrders('');
+    });
     _vm.getDepartments().then((value) async {
       await Future.delayed(const Duration(seconds: 3));
       if (!mounted) return;
       _departments.assignAll(value);
     });
-    _vm.getOrders('').then((value) async {
-      await Future.delayed(const Duration(seconds: 1));
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) async {
       if (!mounted) return;
-      _updateOrdersCount();
-      _updating.value = false;
-    });
-    Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) return;
-      _updateOrdersCount();
-    });
-
-    _vm.updateListener().listen((value) {
-      _onUpdatePressed(_selectedDepartment.value);
+      setState(() {});
     });
   }
 
-  void _updateOrdersCount() {
-    final currentList = <Order>[];
-    final count = <int>[];
-    count.addAll([0, 0, 0, 0]);
-    for (var element in _vm.orders) {
-      if (_selection.value == OrderType.all) {
-        currentList.add(element);
-      } else if (element.orderType == _selection.value) {
-        currentList.add(element);
-      }
-      count[0]++;
-      if (element.orderType == OrderType.dineIn) {
-        count[1]++;
-      } else if (element.orderType == OrderType.takeAway) {
-        count[2]++;
-      } else if (element.orderType == OrderType.delivery) {
-        count[3]++;
-      }
-    }
-    _count.assignAll(count);
+  void _onReconnected({String? connectionId}) {
+    _reconnecting.value = false;
+  }
 
-    final dict1 = _orders.map((e) => e.number).toSet();
-    final dict2 = currentList.map((e) => e.number).toSet();
-
-    final difference1 = dict2.difference(dict1);
-    if (difference1.isNotEmpty) {
-      _vm.playSound();
-    }
-
-    _orders.clear();
-    _orders.addAll(currentList);
+  void _onReconnecting({Exception? error}) {
+    _reconnecting.value = true;
   }
 
   @override
   void dispose() {
     super.dispose();
+    _timer.cancel();
     _vm.dispose();
     Get.delete<KitchenDisplayController>();
     Get.delete<OrdersRepository>();
   }
 
+  void _onOrderUpdate(Order value) {
+    List<Order> orders = [..._orders];
+    var order = orders.firstWhereOrNull((e) => e.id == value.id);
+    if (order != null) {
+      orders.remove(order);
+    }
+    _count[0]++;
+    if (value.orderType == OrderType.dineIn) {
+      _count[1]++;
+    } else if (value.orderType == OrderType.takeAway) {
+      _count[2]++;
+    } else if (value.orderType == OrderType.delivery) {
+      _count[3]++;
+    }
+    orders.add(value);
+    orders.sort((a, b) => int.parse(a.number).compareTo(int.parse(b.number)));
+    _orders.assignAll(orders);
+  }
+
   Future<void> _onUpdatePressed(String department) async {
-    if (_updating.value) return;
-    _updating.value = true;
+    _orders.clear();
+    _count.clear();
+    _count.addAll([0, 0, 0, 0]);
     await _vm.getOrders(department);
-    _updateOrdersCount();
-    _updating.value = false;
   }
 
   Color? _blinkOnNewOrder(OrderStatus orderStatus) {
@@ -131,17 +119,48 @@ class _KitchenDisplayPageState extends State<KitchenDisplayPage> {
       backgroundColor: Theme.of(context).primaryColor,
       appBar: AppBar(
         centerTitle: true,
-        title: Obx(
-          () => SingleChoice(
-            count: _count,
-            selected: _selection.value,
-            onSelectionChanged: (value) {
-              if (!mounted) return;
-              _selection.value = value;
-              _updateOrdersCount();
-            },
-          ),
-        ),
+        title: Obx(() {
+          Widget child;
+          if (_reconnecting.value) {
+            child = SizedBox(
+              width: 350,
+              child: Row(
+                children: [
+                  Flexible(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: Colors.yellow.shade800.withValues(alpha: 0.8),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.yellow.shade800),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text('Reconnecting...'),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          } else {
+            child = const SizedBox(width: 350);
+          }
+          return Row(
+            children: [
+              child,
+              const Spacer(),
+              SingleChoice(
+                count: _count,
+                selected: _selection.value,
+                onSelectionChanged: (value) {
+                  if (!mounted) return;
+                  _selection.value = value;
+                },
+              ),
+              const Spacer(flex: 2),
+            ],
+          );
+        }),
         actions: [
           PopupMenuButton<String>(
             child: const SizedBox(
@@ -165,10 +184,7 @@ class _KitchenDisplayPageState extends State<KitchenDisplayPage> {
             },
             itemBuilder:
                 (context) => [
-                  PopupMenuItem<String>(
-                    value: 'update',
-                    child: Text(_updating.value ? 'PLEASE WAIT' : 'UPDATE'),
-                  ),
+                  PopupMenuItem<String>(value: 'update', child: Text('UPDATE')),
                   const PopupMenuDivider(),
                   const PopupMenuItem(
                     value: 'departments',
@@ -188,9 +204,11 @@ class _KitchenDisplayPageState extends State<KitchenDisplayPage> {
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8.0),
         child: Obx(
-          () => MasonryGridView.count(
+          () => MasonryGridView.builder(
             itemCount: _orders.length,
-            crossAxisCount: 4,
+            gridDelegate: const SliverSimpleGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 4,
+            ),
             itemBuilder: (context, index) {
               final order = _orders[index];
               Color? baseColor = _checkOrderOverTime(order.orderTime);
@@ -201,13 +219,16 @@ class _KitchenDisplayPageState extends State<KitchenDisplayPage> {
                   baseColor: baseColor,
                   alternateColor: alternate,
                   order: order,
-                  onDonePressed: (orderNumber) {
-                    _vm.updateOrder(orderNumber, 'done');
-                    _vm.stopSound();
+                  onDonePressed: (orderId) async {
+                    if (await _vm.updateOrder(orderId, 'done')) {
+                      _orders.removeWhere((e) => e.id == orderId);
+                      _vm.stopSound();
+                    }
                   },
-                  onPreparingPressed: (orderNumber) {
-                    _vm.updateOrder(orderNumber, 'preparing');
-                    _vm.stopSound();
+                  onPreparingPressed: (orderId) async {
+                    if (await _vm.updateOrder(orderId, 'preparing')) {
+                      _vm.stopSound();
+                    }
                   },
                 ),
               );

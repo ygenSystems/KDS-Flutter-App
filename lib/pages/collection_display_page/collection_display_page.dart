@@ -27,8 +27,11 @@ class _CollectionDisplayPageState extends State<CollectionDisplayPage> {
       _onUpdatePressed();
     });
 
-    _vm.getOrdersStream().listen((value) async {
-      await _onUpdatePressed();
+    _vm.getOrdersStream((order) {
+      setState(() {
+        _vm.orders.add(order);
+        _updateOrders();
+      });
     });
   }
 
@@ -50,7 +53,7 @@ class _CollectionDisplayPageState extends State<CollectionDisplayPage> {
       _updating = true;
     });
     await _vm.getOrders();
-    if(!mounted) return;
+    if (!mounted) return;
     setState(() {
       _updating = false;
       _updateOrders();
@@ -94,10 +97,9 @@ class _CollectionDisplayPageState extends State<CollectionDisplayPage> {
                   children: [
                     Text(
                       'PREPARING',
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleLarge!
-                          .copyWith(color: Colors.white),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.titleLarge!.copyWith(color: Colors.white),
                     ),
                     const Divider(),
                     Expanded(
@@ -119,10 +121,9 @@ class _CollectionDisplayPageState extends State<CollectionDisplayPage> {
                   children: [
                     Text(
                       'NOW SERVING',
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleLarge!
-                          .copyWith(color: Colors.white),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.titleLarge!.copyWith(color: Colors.white),
                     ),
                     const Divider(),
                     Expanded(
