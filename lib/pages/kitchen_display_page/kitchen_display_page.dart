@@ -42,7 +42,7 @@ class _KitchenDisplayPageState extends State<KitchenDisplayPage> {
       if (!mounted) return;
       _departments.assignAll(value);
     });
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) async {
+    _timer = Timer.periodic(const Duration(milliseconds: 500), (timer) async {
       if (!mounted) return;
       setState(() {});
     });
@@ -71,15 +71,13 @@ class _KitchenDisplayPageState extends State<KitchenDisplayPage> {
     if (order != null) {
       orders.remove(order);
     }
-    _count[0]++;
-    if (value.orderType == OrderType.dineIn) {
-      _count[1]++;
-    } else if (value.orderType == OrderType.takeAway) {
-      _count[2]++;
-    } else if (value.orderType == OrderType.delivery) {
-      _count[3]++;
+    if (order == null) {
+      _updateCount(value.orderType, true);
     }
     orders.add(value);
+    if (orders.length != _orders.length) {
+      _vm.playSound();
+    }
     orders.sort((a, b) => int.parse(a.number).compareTo(int.parse(b.number)));
     _orders.assignAll(orders);
   }
@@ -111,6 +109,28 @@ class _KitchenDisplayPageState extends State<KitchenDisplayPage> {
       return Colors.yellow.withValues(alpha: 0.8);
     }
     return null;
+  }
+
+  void _updateCount(OrderType type, bool increment) {
+    if (increment) {
+      _count[0]++;
+      if (type == OrderType.dineIn) {
+        _count[1]++;
+      } else if (type == OrderType.takeAway) {
+        _count[2]++;
+      } else if (type == OrderType.delivery) {
+        _count[3]++;
+      }
+    } else {
+      _count[0]--;
+      if (type == OrderType.dineIn) {
+        _count[1]--;
+      } else if (type == OrderType.takeAway) {
+        _count[2]--;
+      } else if (type == OrderType.delivery) {
+        _count[3]--;
+      }
+    }
   }
 
   @override
@@ -222,6 +242,7 @@ class _KitchenDisplayPageState extends State<KitchenDisplayPage> {
                   onDonePressed: (orderId) async {
                     if (await _vm.updateOrder(orderId, 'done')) {
                       _orders.removeWhere((e) => e.id == orderId);
+                      _updateCount(order.orderType, false);
                       _vm.stopSound();
                     }
                   },
