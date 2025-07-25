@@ -53,28 +53,37 @@ class TicketWidget extends StatelessWidget {
               },
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Column(
-              children: [
-                Divider(color: primaryColor),
-                RegularItemsTicketDetail(
-                  deals: order.deals,
-                  items: order.items,
-                ),
-                if (order.lessItems.isNotEmpty) Divider(color: primaryColor),
-                if (order.lessItems.isNotEmpty)
-                  LessItemTicketDetails(
-                    lessItems: order.lessItems,
-                    lessDeals: order.lessDeals,
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Column(
+                children: [
+                  Expanded(
+                    child: Column(
+                      children: [
+                        Divider(color: primaryColor),
+                        RegularItemsTicketDetail(
+                          deals: order.deals,
+                          items: order.items,
+                        ),
+                        if (order.lessItems.isNotEmpty)
+                          Divider(color: primaryColor),
+                        if (order.lessItems.isNotEmpty)
+                          LessItemTicketDetails(
+                            lessItems: order.lessItems,
+                            lessDeals: order.lessDeals,
+                          ),
+                        Divider(color: primaryColor),
+                      ],
+                    ),
                   ),
-                Divider(color: primaryColor),
-                TicketFooter(
-                  order: order,
-                  onDonePressed: onDonePressed,
-                  onPreparingPressed: onPreparingPressed,
-                ),
-              ],
+                  TicketFooter(
+                    order: order,
+                    onDonePressed: onDonePressed,
+                    onPreparingPressed: onPreparingPressed,
+                  ),
+                ],
+              ),
             ),
           ),
         ],

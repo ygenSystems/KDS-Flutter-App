@@ -1,13 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:get/get.dart';
 import 'package:kitchen_display_system/models/department.dart';
 import 'package:kitchen_display_system/models/order.dart';
 import 'package:kitchen_display_system/models/order_status.dart';
 import 'package:kitchen_display_system/models/order_types.dart';
+import 'package:kitchen_display_system/pages/kitchen_display_page/kds_appbar_widget.dart';
 import 'package:kitchen_display_system/pages/kitchen_display_page/kitchen_display_page_vm.dart';
+import 'package:kitchen_display_system/pages/kitchen_display_page/order_tile_widget.dart';
 import 'package:kitchen_display_system/repositories/order_repository.dart';
 import 'package:kitchen_display_system/widgets/ticket_widget.dart';
 
@@ -28,6 +29,12 @@ class _KitchenDisplayPageState extends State<KitchenDisplayPage> {
   final _selectedDepartment = 'ALL'.obs;
   late final Timer _timer;
   final _reconnecting = false.obs;
+
+  final _pageController = PageController();
+  final _scrollController = ScrollController();
+  final _pageOrders = <Order>[].obs;
+
+  final count = 6;
 
   @override
   void initState() {
@@ -138,172 +145,130 @@ class _KitchenDisplayPageState extends State<KitchenDisplayPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).primaryColor,
-      appBar: AppBar(
-        centerTitle: true,
-        title: Obx(() {
-          Widget child;
-          if (_reconnecting.value) {
-            child = SizedBox(
-              width: 350,
-              child: Row(
-                children: [
-                  Flexible(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: Colors.yellow.shade800.withValues(alpha: 0.8),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Colors.yellow.shade800),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Text('Reconnecting...'),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          } else {
-            child = const SizedBox(width: 350);
-          }
-          return Row(
-            children: [
-              child,
-              const Spacer(),
-              SingleChoice(
-                count: _count,
-                selected: _selection.value,
-                onSelectionChanged: (value) {
-                  if (!mounted) return;
-                  _selection.value = value;
-                },
-              ),
-              const Spacer(flex: 2),
-            ],
-          );
-        }),
-        actions: [
-          PopupMenuButton<String>(
-            child: const SizedBox(
-              width: 150,
-              child: ListTile(
-                title: Text('OPTIONS'),
-                trailing: Icon(Icons.more_vert),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(kToolbarHeight),
+        child: KDSAppBar(
+          onReconnected: _onReconnected,
+          onReconnecting: _onReconnecting,
+          reconnecting: _reconnecting,
+          selectedDepartment: _selectedDepartment,
+          selection: _selection,
+          count: _count,
+          departments: _departments,
+          onUpdatePressed: _onUpdatePressed,
+          onSelectionChanged: (value) {
+            if (!mounted) return;
+            _selection.value = value;
+          },
+        ),
+      ),
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: Obx(
+                () => PageView.builder(
+                  controller: _pageController,
+                  itemCount: (_orders.length / count).ceil(),
+                  itemBuilder: (context, index1) {
+                    _pageOrders.assignAll(
+                      _orders.skip(index1 * count).take(count),
+                    );
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        for (var order in _pageOrders)
+                          Builder(
+                            builder: (context) {
+                              Color? baseColor = _checkOrderOverTime(
+                                order.orderTime,
+                              );
+                              Color? alternate = _blinkOnNewOrder(order.status);
+                              return SizedBox(
+                                width: 300,
+                                child: TicketWidget(
+                                  order: order,
+                                  baseColor: baseColor,
+                                  alternateColor: alternate,
+                                  onDonePressed: (orderId) async {
+                                    if (await _vm.updateOrder(
+                                      orderId,
+                                      'done',
+                                    )) {
+                                      _orders.removeWhere(
+                                        (e) => e.id == orderId,
+                                      );
+                                      _updateCount(order.orderType, false);
+                                      _vm.stopSound();
+                                    }
+                                  },
+                                  onPreparingPressed: (orderId) async {
+                                    if (await _vm.updateOrder(
+                                      orderId,
+                                      'preparing',
+                                    )) {
+                                      _vm.stopSound();
+                                    }
+                                  },
+                                ),
+                              );
+                            },
+                          ),
+                      ],
+                    );
+                  },
+                ),
               ),
             ),
-            onSelected: (value) async {
-              switch (value) {
-                case 'update':
-                  await _onUpdatePressed(_selectedDepartment.value);
-                  return;
-                case 'departments':
-                  return;
-                default:
-                  _selectedDepartment.value = value;
-                  await _onUpdatePressed(_selectedDepartment.value);
-              }
-            },
-            itemBuilder:
-                (context) => [
-                  PopupMenuItem<String>(value: 'update', child: Text('UPDATE')),
-                  const PopupMenuDivider(),
-                  const PopupMenuItem(
-                    value: 'departments',
-                    child: Text('DEPARTMENTS'),
-                  ),
-                  const PopupMenuDivider(),
-                  ..._departments.map(
-                    (e) => PopupMenuItem<String>(
-                      value: e.name,
-                      child: Text(e.name),
+          ),
+          SizedBox(
+            height: 100,
+            child: ListView.builder(
+              controller: _scrollController,
+              scrollDirection: Axis.horizontal,
+              itemCount: _orders.length,
+              itemBuilder: (context, index) {
+                final order = _orders[index];
+                Color? baseColor = _checkOrderOverTime(order.orderTime);
+                final primaryColor = Theme.of(context).primaryColor;
+                return InkWell(
+                  onTap: () {
+                    final value = index ~/ count;
+                    _pageController.animateToPage(
+                      value,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    );
+                  },
+                  child: SizedBox(
+                    width: 100,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: OrderTile(
+                            primaryColor: primaryColor,
+                            baseColor: baseColor,
+                            order: order,
+                          ),
+                        ),
+                        // Place VerticalDivider after every fifth widget except the last one
+                        if ((index + 1) % 5 == 0 && index != _orders.length - 1)
+                          const VerticalDivider(
+                            color: Colors.white,
+                            width: 1,
+                            thickness: 1,
+                          ),
+                      ],
                     ),
                   ),
-                ],
+                );
+              },
+            ),
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8.0),
-        child: Obx(
-          () => MasonryGridView.builder(
-            itemCount: _orders.length,
-            gridDelegate: const SliverSimpleGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 4,
-            ),
-            itemBuilder: (context, index) {
-              final order = _orders[index];
-              Color? baseColor = _checkOrderOverTime(order.orderTime);
-              Color? alternate = _blinkOnNewOrder(order.status);
-              return SizedBox(
-                width: 300,
-                child: TicketWidget(
-                  baseColor: baseColor,
-                  alternateColor: alternate,
-                  order: order,
-                  onDonePressed: (orderId) async {
-                    if (await _vm.updateOrder(orderId, 'done')) {
-                      _orders.removeWhere((e) => e.id == orderId);
-                      _updateCount(order.orderType, false);
-                      _vm.stopSound();
-                    }
-                  },
-                  onPreparingPressed: (orderId) async {
-                    if (await _vm.updateOrder(orderId, 'preparing')) {
-                      _vm.stopSound();
-                    }
-                  },
-                ),
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class SingleChoice extends StatelessWidget {
-  final OrderType selected;
-  final List<int> count;
-  final void Function(OrderType) onSelectionChanged;
-  const SingleChoice({
-    super.key,
-    required this.selected,
-    required this.onSelectionChanged,
-    required this.count,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final primaryColor = Theme.of(context).primaryColor;
-    final style = TextStyle(color: primaryColor);
-    return SegmentedButton<OrderType>(
-      segments: <ButtonSegment<OrderType>>[
-        ButtonSegment<OrderType>(
-          value: OrderType.all,
-          label: Obx(() => Text('All (${count[0]})', style: style)),
-          icon: Icon(Icons.all_inclusive, color: primaryColor),
-        ),
-        ButtonSegment<OrderType>(
-          value: OrderType.dineIn,
-          label: Obx(() => Text('Dine In (${count[1]})', style: style)),
-          icon: Icon(Icons.table_restaurant, color: primaryColor),
-        ),
-        ButtonSegment<OrderType>(
-          value: OrderType.takeAway,
-          label: Obx(() => Text('Takeaway (${count[2]})', style: style)),
-          icon: Icon(Icons.directions_walk, color: primaryColor),
-        ),
-        ButtonSegment<OrderType>(
-          value: OrderType.delivery,
-          label: Obx(() => Text('Delivery (${count[3]})', style: style)),
-          icon: Icon(Icons.pedal_bike, color: primaryColor),
-        ),
-      ],
-      selected: <OrderType>{selected},
-      onSelectionChanged:
-          (Set<OrderType> newSelection) =>
-              onSelectionChanged(newSelection.first),
     );
   }
 }
