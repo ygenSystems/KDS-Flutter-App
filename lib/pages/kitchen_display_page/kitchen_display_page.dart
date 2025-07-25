@@ -313,50 +313,52 @@ class _KitchenDisplayPageState extends State<KitchenDisplayPage> {
           const Divider(color: Colors.white, height: 1, thickness: 1),
           SizedBox(
             height: 100,
-            child: Scrollbar(
-              controller: _scrollController,
-              interactive: true,
-              thumbVisibility: true,
-              child: ListView.builder(
+            child: Obx(
+              () => Scrollbar(
                 controller: _scrollController,
-                scrollDirection: Axis.horizontal,
-                itemCount: _orders.length,
-                itemBuilder: (context, index) {
-                  final order = _orders[index];
-                  Color? baseColor = _checkOrderOverTime(order.orderTime);
-                  final primaryColor = Theme.of(context).primaryColor;
-                  return InkWell(
-                    onTap: () {
-                      final value = index ~/ count;
-                      _pageController.animateToPage(
-                        value,
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                      );
-                    },
-                    child: SizedBox(
-                      width: 100,
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: OrderTile(
-                              primaryColor: primaryColor,
-                              baseColor: baseColor,
-                              order: order,
+                interactive: true,
+                thumbVisibility: true,
+                child: ListView.builder(
+                  controller: _scrollController,
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _orders.length,
+                  itemBuilder: (context, index) {
+                    final order = _orders[index];
+                    Color? baseColor = _checkOrderOverTime(order.orderTime);
+                    final primaryColor = Theme.of(context).primaryColor;
+                    return InkWell(
+                      onTap: () {
+                        final value = index ~/ count;
+                        _pageController.animateToPage(
+                          value,
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        );
+                      },
+                      child: SizedBox(
+                        width: 100,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: OrderTile(
+                                primaryColor: primaryColor,
+                                baseColor: baseColor,
+                                order: order,
+                              ),
                             ),
-                          ),
-                          if ((index + 1) % count == 0 &&
-                              index != _orders.length - 1)
-                            const VerticalDivider(
-                              color: Colors.white,
-                              width: 1,
-                              thickness: 1,
-                            ),
-                        ],
+                            if ((index + 1) % count == 0 &&
+                                index != _orders.length - 1)
+                              const VerticalDivider(
+                                color: Colors.white,
+                                width: 1,
+                                thickness: 1,
+                              ),
+                          ],
+                        ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
             ),
           ),
