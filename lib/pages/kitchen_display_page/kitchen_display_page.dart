@@ -27,14 +27,20 @@ class _KitchenDisplayPageState extends State<KitchenDisplayPage> {
   final _departments = <Department>[].obs;
   final _count = [0, 0, 0, 0].obs;
   final _selectedDepartment = 'ALL'.obs;
-  late final Timer _timer;
   final _reconnecting = false.obs;
 
   final _pageController = PageController();
   final _scrollController = ScrollController();
-  final _pageOrders = <Order>[].obs;
-
-  final count = 6;
+  final _ticketScrollControllers = <String, ScrollController>{};
+  final _firstRowOrders = <Order>[].obs;
+  final _secondRowOrders = <Order>[].obs;
+  int get count {
+    final x = _vm.singleRowElementsCount();
+    if (_vm.doubleRows()) {
+      return x * 2;
+    }
+    return x;
+  }
 
   @override
   void initState() {
@@ -49,10 +55,6 @@ class _KitchenDisplayPageState extends State<KitchenDisplayPage> {
       if (!mounted) return;
       _departments.assignAll(value);
     });
-    _timer = Timer.periodic(const Duration(milliseconds: 500), (timer) async {
-      if (!mounted) return;
-      setState(() {});
-    });
   }
 
   void _onReconnected({String? connectionId}) {
@@ -66,7 +68,11 @@ class _KitchenDisplayPageState extends State<KitchenDisplayPage> {
   @override
   void dispose() {
     super.dispose();
-    _timer.cancel();
+    _pageController.dispose();
+    _scrollController.dispose();
+    for (var controller in _ticketScrollControllers.values) {
+      controller.dispose();
+    }
     _vm.dispose();
     Get.delete<KitchenDisplayController>();
     Get.delete<OrdersRepository>();
@@ -171,50 +177,131 @@ class _KitchenDisplayPageState extends State<KitchenDisplayPage> {
               child: Obx(
                 () => PageView.builder(
                   controller: _pageController,
-                  itemCount: (_orders.length / count).ceil(),
+                  itemCount:
+                      (_orders.length / (_vm.doubleRows() ? count / 2 : count))
+                          .ceil(),
                   itemBuilder: (context, index1) {
-                    _pageOrders.assignAll(
-                      _orders.skip(index1 * count).take(count),
-                    );
-                    return Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    var displayOrders = _orders
+                        .skip(index1 * count)
+                        .take(count);
+                    if (_vm.doubleRows()) {
+                      var c1 = (count / 2).toInt();
+                      _firstRowOrders.assignAll(displayOrders.take(c1));
+                      if (_vm.doubleRows()) {
+                        _secondRowOrders.assignAll(displayOrders.skip(c1));
+                      }
+                    } else {
+                      _firstRowOrders.assignAll(displayOrders);
+                    }
+                    return Column(
                       children: [
-                        for (var order in _pageOrders)
-                          Builder(
-                            builder: (context) {
-                              Color? baseColor = _checkOrderOverTime(
-                                order.orderTime,
-                              );
-                              Color? alternate = _blinkOnNewOrder(order.status);
-                              return SizedBox(
-                                width: 300,
-                                child: TicketWidget(
-                                  order: order,
-                                  baseColor: baseColor,
-                                  alternateColor: alternate,
-                                  onDonePressed: (orderId) async {
-                                    if (await _vm.updateOrder(
-                                      orderId,
-                                      'done',
-                                    )) {
-                                      _orders.removeWhere(
-                                        (e) => e.id == orderId,
-                                      );
-                                      _updateCount(order.orderType, false);
-                                      _vm.stopSound();
-                                    }
-                                  },
-                                  onPreparingPressed: (orderId) async {
-                                    if (await _vm.updateOrder(
-                                      orderId,
-                                      'preparing',
-                                    )) {
-                                      _vm.stopSound();
-                                    }
+                        Expanded(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              for (var order in _firstRowOrders)
+                                Builder(
+                                  builder: (context) {
+                                    Color? baseColor = _checkOrderOverTime(
+                                      order.orderTime,
+                                    );
+                                    Color? alternate = _blinkOnNewOrder(
+                                      order.status,
+                                    );
+                                    _ticketScrollControllers[order.id] =
+                                        ScrollController();
+                                    return SizedBox(
+                                      width: 300,
+                                      child: TicketWidget(
+                                        scrollController:
+                                            _ticketScrollControllers[order.id]!,
+                                        order: order,
+                                        baseColor: baseColor,
+                                        alternateColor: alternate,
+                                        onDonePressed: (orderId) async {
+                                          if (await _vm.updateOrder(
+                                            orderId,
+                                            'done',
+                                          )) {
+                                            _orders.removeWhere(
+                                              (e) => e.id == orderId,
+                                            );
+                                            _updateCount(
+                                              order.orderType,
+                                              false,
+                                            );
+                                            _vm.stopSound();
+                                          }
+                                        },
+                                        onPreparingPressed: (orderId) async {
+                                          if (await _vm.updateOrder(
+                                            orderId,
+                                            'preparing',
+                                          )) {
+                                            _vm.stopSound();
+                                          }
+                                        },
+                                      ),
+                                    );
                                   },
                                 ),
-                              );
-                            },
+                            ],
+                          ),
+                        ),
+                        if (_vm.doubleRows())
+                          Expanded(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                for (var order in _secondRowOrders)
+                                  Builder(
+                                    builder: (context) {
+                                      Color? baseColor = _checkOrderOverTime(
+                                        order.orderTime,
+                                      );
+                                      Color? alternate = _blinkOnNewOrder(
+                                        order.status,
+                                      );
+                                      _ticketScrollControllers[order.id] =
+                                          ScrollController();
+                                      return SizedBox(
+                                        width: 300,
+                                        child: TicketWidget(
+                                          scrollController:
+                                              _ticketScrollControllers[order
+                                                  .id]!,
+                                          order: order,
+                                          baseColor: baseColor,
+                                          alternateColor: alternate,
+                                          onDonePressed: (orderId) async {
+                                            if (await _vm.updateOrder(
+                                              orderId,
+                                              'done',
+                                            )) {
+                                              _orders.removeWhere(
+                                                (e) => e.id == orderId,
+                                              );
+                                              _updateCount(
+                                                order.orderType,
+                                                false,
+                                              );
+                                              _vm.stopSound();
+                                            }
+                                          },
+                                          onPreparingPressed: (orderId) async {
+                                            if (await _vm.updateOrder(
+                                              orderId,
+                                              'preparing',
+                                            )) {
+                                              _vm.stopSound();
+                                            }
+                                          },
+                                        ),
+                                      );
+                                    },
+                                  ),
+                              ],
+                            ),
                           ),
                       ],
                     );
@@ -223,48 +310,54 @@ class _KitchenDisplayPageState extends State<KitchenDisplayPage> {
               ),
             ),
           ),
+          const Divider(color: Colors.white, height: 1, thickness: 1),
           SizedBox(
             height: 100,
-            child: ListView.builder(
+            child: Scrollbar(
               controller: _scrollController,
-              scrollDirection: Axis.horizontal,
-              itemCount: _orders.length,
-              itemBuilder: (context, index) {
-                final order = _orders[index];
-                Color? baseColor = _checkOrderOverTime(order.orderTime);
-                final primaryColor = Theme.of(context).primaryColor;
-                return InkWell(
-                  onTap: () {
-                    final value = index ~/ count;
-                    _pageController.animateToPage(
-                      value,
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                    );
-                  },
-                  child: SizedBox(
-                    width: 100,
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: OrderTile(
-                            primaryColor: primaryColor,
-                            baseColor: baseColor,
-                            order: order,
+              interactive: true,
+              thumbVisibility: true,
+              child: ListView.builder(
+                controller: _scrollController,
+                scrollDirection: Axis.horizontal,
+                itemCount: _orders.length,
+                itemBuilder: (context, index) {
+                  final order = _orders[index];
+                  Color? baseColor = _checkOrderOverTime(order.orderTime);
+                  final primaryColor = Theme.of(context).primaryColor;
+                  return InkWell(
+                    onTap: () {
+                      final value = index ~/ count;
+                      _pageController.animateToPage(
+                        value,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
+                    },
+                    child: SizedBox(
+                      width: 100,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: OrderTile(
+                              primaryColor: primaryColor,
+                              baseColor: baseColor,
+                              order: order,
+                            ),
                           ),
-                        ),
-                        // Place VerticalDivider after every fifth widget except the last one
-                        if ((index + 1) % 5 == 0 && index != _orders.length - 1)
-                          const VerticalDivider(
-                            color: Colors.white,
-                            width: 1,
-                            thickness: 1,
-                          ),
-                      ],
+                          if ((index + 1) % count == 0 &&
+                              index != _orders.length - 1)
+                            const VerticalDivider(
+                              color: Colors.white,
+                              width: 1,
+                              thickness: 1,
+                            ),
+                        ],
+                      ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
           ),
         ],

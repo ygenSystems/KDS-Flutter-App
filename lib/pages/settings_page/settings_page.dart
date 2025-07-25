@@ -18,6 +18,8 @@ class _SettingsPageState extends State<SettingsPage> {
   final _blinkNewOrder = false.obs;
   final _stopSoundOnPendingPressed = false.obs;
   final _delayOnDonePressed = false.obs;
+  final _doubleRows = false.obs;
+  final _singleRowElementsCount = 5.obs;
   final audioPlayer = AudioPlayer();
   final _soundList = <String, String>{
     'new_order1': 'New Order 1',
@@ -40,6 +42,8 @@ class _SettingsPageState extends State<SettingsPage> {
     _stopSoundOnPendingPressed.value =
         _box.read('stop_sound_on_pending_pressed') ?? false;
     _delayOnDonePressed.value = _box.read('delay_on_done_pressed') ?? false;
+    _doubleRows.value = _box.read('double_rows') ?? false;
+    _singleRowElementsCount.value = _box.read('single_row_elements_count') ?? 5;
   }
 
   @override
@@ -175,6 +179,60 @@ class _SettingsPageState extends State<SettingsPage> {
                   await _box.write('delay_on_done_pressed', value);
                   _showSnackbar('Delay on done pressed saved');
                 },
+              ),
+            ),
+            Obx(
+              () => SwitchListTile(
+                title: const Text('Double Row Display'),
+                subtitle: const Text('Enable double row display for orders'),
+                value: _doubleRows.value,
+                onChanged: (value) async {
+                  _doubleRows.value = value;
+                  await _box.write('double_rows', value);
+                },
+              ),
+            ),
+            Obx(
+              () => ListTile(
+                title: Text(
+                  'Single Row Elements Count',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+                subtitle: Text(
+                  'Number of elements in a single row',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.remove),
+                      onPressed: () async {
+                        if (_singleRowElementsCount.value > 1) {
+                          _singleRowElementsCount.value--;
+                          await _box.write(
+                            'single_row_elements_count',
+                            _singleRowElementsCount.value,
+                          );
+                        }
+                      },
+                    ),
+                    Text(
+                      _singleRowElementsCount.value.toString(),
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.add),
+                      onPressed: () async {
+                        _singleRowElementsCount.value++;
+                        await _box.write(
+                          'single_row_elements_count',
+                          _singleRowElementsCount.value,
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
           ],

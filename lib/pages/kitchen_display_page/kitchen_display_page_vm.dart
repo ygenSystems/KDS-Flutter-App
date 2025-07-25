@@ -46,6 +46,14 @@ class KitchenDisplayController {
     return GetStorage().read<bool>('stop_sound_on_pending_pressed') ?? false;
   }
 
+  bool doubleRows() {
+    return GetStorage().read<bool>('double_rows') ?? false;
+  }
+
+  int singleRowElementsCount() {
+    return GetStorage().read<int>('single_row_elements_count') ?? 5;
+  }
+
   Future<void> stopSound() async {
     if (stopSoundOnPendingPressed() &&
         _audioPlayer.state == PlayerState.playing) {

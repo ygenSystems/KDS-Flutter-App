@@ -11,6 +11,7 @@ class TicketWidget extends StatelessWidget {
   final void Function(String orderNumber) onPreparingPressed;
   final Color? alternateColor;
   final Color? baseColor;
+  final ScrollController scrollController;
   const TicketWidget({
     super.key,
     required this.order,
@@ -18,6 +19,7 @@ class TicketWidget extends StatelessWidget {
     required this.onPreparingPressed,
     this.alternateColor,
     this.baseColor,
+    required this.scrollController,
   });
 
   @override
@@ -59,22 +61,28 @@ class TicketWidget extends StatelessWidget {
               child: Column(
                 children: [
                   Expanded(
-                    child: Column(
-                      children: [
-                        Divider(color: primaryColor),
-                        RegularItemsTicketDetail(
-                          deals: order.deals,
-                          items: order.items,
-                        ),
-                        if (order.lessItems.isNotEmpty)
+                    child: Scrollbar(
+                      interactive: true,
+                      thumbVisibility: true,
+                      controller: scrollController,
+                      child: ListView(
+                        controller: scrollController,
+                        children: [
                           Divider(color: primaryColor),
-                        if (order.lessItems.isNotEmpty)
-                          LessItemTicketDetails(
-                            lessItems: order.lessItems,
-                            lessDeals: order.lessDeals,
+                          RegularItemsTicketDetail(
+                            deals: order.deals,
+                            items: order.items,
                           ),
-                        Divider(color: primaryColor),
-                      ],
+                          if (order.lessItems.isNotEmpty)
+                            Divider(color: primaryColor),
+                          if (order.lessItems.isNotEmpty)
+                            LessItemTicketDetails(
+                              lessItems: order.lessItems,
+                              lessDeals: order.lessDeals,
+                            ),
+                          Divider(color: primaryColor),
+                        ],
+                      ),
                     ),
                   ),
                   TicketFooter(

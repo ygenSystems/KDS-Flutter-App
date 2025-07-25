@@ -38,7 +38,7 @@ class OrderTile extends StatelessWidget {
                       order.number,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: baseColor == null ? Colors.black : Colors.white,
+                        color: baseColor == null ? primaryColor : Colors.black,
                       ),
                       textAlign: TextAlign.center,
                     ),
