@@ -15,49 +15,57 @@ class CollectionDisplayPage extends StatefulWidget {
 
 class _CollectionDisplayPageState extends State<CollectionDisplayPage> {
   late final CollectionDisplayPageVM _vm;
-  final List<Order> _preparingOrders = [];
-  final List<Order> _doneOrders = [];
-  bool _updating = false;
+  final _preparingOrders = <Order>[].obs;
+  final _doneOrders = <Order>[].obs;
+  final _reconnecting = false.obs;
 
   @override
   void initState() {
     super.initState();
     _vm = Get.find<CollectionDisplayPageVM>();
+
+    _vm.setupSignalR(_onReconnected, _onReconnecting).then((_) async {
+      await _vm.getOrders();
+      _vm.getOrdersStream(_updateOrders);
+    });
     Future.delayed(const Duration(seconds: 1)).then((value) {
       if (mounted) setState(() {});
     });
-
-    _vm.getOrdersStream((order) {
-      setState(() {
-        _vm.orders.add(order);
-        _updateOrders();
-      });
-    });
   }
 
-  void _updateOrders() {
-    _preparingOrders.clear();
-    _doneOrders.clear();
-    for (var order in _vm.orders) {
-      if (order.status == OrderStatus.preparing) {
-        _preparingOrders.add(order);
-      } else if (order.status == OrderStatus.done) {
-        _doneOrders.add(order);
-      }
+  void _updateOrders(Order order) {
+    int sortDesc(Order a, Order b) {
+      return int.parse(b.number).compareTo(int.parse(a.number));
+    }
+
+    if (order.status == OrderStatus.preparing) {
+      _doneOrders.removeWhere((o) => o.id == order.id);
+      final temp = [..._preparingOrders];
+      temp.add(order);
+      temp.sort(sortDesc);
+      _preparingOrders.assignAll(temp);
+    } else if (order.status == OrderStatus.done) {
+      _preparingOrders.removeWhere((o) => o.id == order.id);
+      final temp = [..._doneOrders];
+      temp.add(order);
+      temp.sort(sortDesc);
+      _doneOrders.assignAll(temp);
+    } else if (order.status == OrderStatus.pending) {
+      _preparingOrders.removeWhere((o) => o.id == order.id);
+      _doneOrders.removeWhere((o) => o.id == order.id);
     }
   }
 
+  void _onReconnected({String? connectionId}) {
+    _reconnecting.value = false;
+  }
+
+  void _onReconnecting({Exception? error}) {
+    _reconnecting.value = true;
+  }
+
   Future<void> _onUpdatePressed() async {
-    if (!mounted) return;
-    setState(() {
-      _updating = true;
-    });
     await _vm.getOrders();
-    if (!mounted) return;
-    setState(() {
-      _updating = false;
-      _updateOrders();
-    });
   }
 
   @override
@@ -78,11 +86,39 @@ class _CollectionDisplayPageState extends State<CollectionDisplayPage> {
     );
     return Scaffold(
       appBar: AppBar(
+        title: Obx(() {
+          Widget child;
+          if (_reconnecting.value) {
+            child = SizedBox(
+              width: 350,
+              child: Row(
+                children: [
+                  Flexible(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: Colors.yellow.shade800.withValues(alpha: 0.8),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.yellow.shade800),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text('Reconnecting...'),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          } else {
+            child = const SizedBox(width: 350);
+          }
+          return Row(children: [child, const Spacer()]);
+        }),
         actions: [
           TextButton.icon(
             onPressed: _onUpdatePressed,
             icon: const Icon(Icons.refresh),
-            label: Text(_updating ? 'Please Wait' : 'Update'),
+            label: Text('Update'),
           ),
         ],
       ),
@@ -103,13 +139,15 @@ class _CollectionDisplayPageState extends State<CollectionDisplayPage> {
                     ),
                     const Divider(),
                     Expanded(
-                      child: GridView.builder(
-                        gridDelegate: delegate,
-                        itemCount: _preparingOrders.length,
-                        itemBuilder: (context, index) {
-                          final order = _preparingOrders[index];
-                          return CustomerTicket(order: order);
-                        },
+                      child: Obx(
+                        () => GridView.builder(
+                          gridDelegate: delegate,
+                          itemCount: _preparingOrders.length,
+                          itemBuilder: (context, index) {
+                            final order = _preparingOrders[index];
+                            return CustomerTicket(order: order);
+                          },
+                        ),
                       ),
                     ),
                   ],
@@ -127,13 +165,15 @@ class _CollectionDisplayPageState extends State<CollectionDisplayPage> {
                     ),
                     const Divider(),
                     Expanded(
-                      child: GridView.builder(
-                        gridDelegate: delegate,
-                        itemCount: _doneOrders.length,
-                        itemBuilder: (context, index) {
-                          final order = _doneOrders[index];
-                          return CustomerTicket(order: order);
-                        },
+                      child: Obx(
+                        () => GridView.builder(
+                          gridDelegate: delegate,
+                          itemCount: _doneOrders.length,
+                          itemBuilder: (context, index) {
+                            final order = _doneOrders[index];
+                            return CustomerTicket(order: order);
+                          },
+                        ),
                       ),
                     ),
                   ],

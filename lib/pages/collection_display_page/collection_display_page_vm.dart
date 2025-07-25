@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import 'package:kitchen_display_system/models/order.dart';
 import 'package:kitchen_display_system/repositories/order_repository.dart';
+import 'package:signalr_netcore/signalr_client.dart';
 
 class CollectionDisplayPageVM {
   late final OrdersRepository _repo;
@@ -8,7 +9,12 @@ class CollectionDisplayPageVM {
     _repo = Get.find<OrdersRepository>();
   }
 
-  List<Order> orders = [];
+  Future<void> setupSignalR(
+    ReconnectedCallback onReconnected,
+    ReconnectingCallback onReconnecting,
+  ) async {
+    await _repo.setupSignalR(onReconnected, onReconnecting);
+  }
 
   Future<void> getOrders() async {
     await _repo.getCDSOrders();

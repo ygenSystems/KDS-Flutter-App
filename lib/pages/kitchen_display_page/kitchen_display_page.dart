@@ -68,10 +68,11 @@ class _KitchenDisplayPageState extends State<KitchenDisplayPage> {
   void _onOrderUpdate(Order value) {
     List<Order> orders = [..._orders];
     var order = orders.firstWhereOrNull((e) => e.id == value.id);
-    if (order != null) {
+    final orderExists = order != null;
+    if (orderExists) {
       orders.remove(order);
     }
-    if (order == null) {
+    if (!orderExists) {
       _updateCount(value.orderType, true);
     }
     orders.add(value);
@@ -106,7 +107,7 @@ class _KitchenDisplayPageState extends State<KitchenDisplayPage> {
     if (difference >= 20) {
       return Colors.red.withValues(alpha: 0.8);
     } else if (difference >= 15) {
-      return Colors.yellow.withValues(alpha: 0.8);
+      return Colors.yellow.shade800.withValues(alpha: 0.8);
     }
     return null;
   }
